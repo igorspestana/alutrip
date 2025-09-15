@@ -1,0 +1,281 @@
+---
+description: Rules and conventions for AluTrip Travel Assistant API
+globs: ["**/*.{ts,js}"]
+alwaysApply: true
+---
+
+# General Conventions
+
+- Use **TypeScript** throughout the project.
+- **Hybrid architecture**: independent backend and frontend with their own configurations
+- Domain-separated folder structure (ex: `/routes`, `/controllers`, `/services`).
+- Use **Express** with lean middlewares.
+- Apply `dotenv` for environment variable management.
+- Define errors and responses in standardized format: `{ status, message, data }`.
+- **AluTrip is an authentication-free travel assistant** - no login, no bureaucracy, no barriers.
+
+# Code Standards
+
+- Use `camelCase` for variables and functions, and `PascalCase` for classes
+- Use absolute imports via `tsconfig.paths`
+- No `console.log` in production. Use logger (`winston`)
+- Avoid inline anonymous functions. Always name handlers and services
+- Do not use aliases in imports. Always use the full module name
+
+# Route Patterns
+
+- Use resource-named files (`travel.routes.ts`, `itinerary.routes.ts`) and separate methods by HTTP verb (ex: `getItinerary`, `createItinerary`)
+- Organize routes by business domain (travel Q&A, itinerary planning)
+- Use consistent prefixes for functionality grouping (`/api/travel`, `/api/itinerary`)
+
+# Testing
+
+- Unit tests with **Jest**
+- Minimum recommended coverage: 80%
+- Organize tests mirroring the application's folder structure
+
+# Security
+
+- **AluTrip has no authentication system** - free access without login
+- Input validation with Zod on all endpoints
+- **IP-based** rate limiting (5 requests per 24h per feature)
+- IP-based access control for rate limiting
+
+# API Documentation (Swagger)
+
+- Every created route must be documented in Swagger (`OpenAPI 3.x`)
+- Use `swagger-jsdoc` + `swagger-ui-express` library
+- The definition must include:
+  - Method (`GET`, `POST`, etc)
+  - Path and clear functionality description
+  - Request body (`requestBody`) with schemas
+  - Expected responses (`200`, `400`, `429` for rate limiting, etc)
+  - Rate limiting (IP-based, 5 requests per 24h per feature)
+- Base file `swagger.yaml` or use `@swagger` in JSDoc comments
+- Swagger available locally at `/docs` (restricted in production)
+- **Swagger without authentication** - free access for documentation
+
+# Access Control and Validation
+
+- **AluTrip has no authentication** - open system for all users
+- Validate all inputs with Zod schemas
+- Configure CORS properly for frontend
+- Use Helmet for security headers
+- File type validation in uploads (itinerary PDFs)
+- IP-based access control for rate limiting
+
+# Error Handling
+
+- Use standardized error responses:
+```json
+{
+  "status": "error",
+  "message": "Error description",
+  "data": {}
+}
+```
+
+# Success Responses
+
+- Use standardized success responses:
+```json
+{
+  "status": "success",
+  "message": "Operation completed successfully",
+  "data": {}
+}
+```
+
+# Requires use of async/await
+
+## Rule
+Using `.then()` or `.catch()` directly on Promises is not allowed. Use `async/await` for asynchronous flow control.
+
+## Justification
+Improves readability and standardizes asynchronous code style throughout the application.
+
+## Exceptions
+- When it's necessary to use `Promise.all`, `Promise.race` or `Promise.allSettled`.
+- When the context requires explicit stream or event handling.
+
+## Invalid example
+
+```ts
+fetchData()
+  .then(res => handle(res))
+  .catch(err => log(err));
+```
+## Valid example
+
+```ts
+try {
+  const res = await fetchData();
+  handle(res);
+} catch (err) {
+  log(err);
+}
+```
+
+# Logging
+
+- Use Winston for structured logging
+- Avoid verbose logs in production (use levels: `error`, `warn`, `info`, `debug`)
+- Configure transport for different environments (ex: `Console` in dev, `File`/`Remote` in production)
+- Logs written to:
+  - `logs/error.log` - Error logs only
+  - `logs/combined.log` - All logs
+  - `logs/ai-operations.log` - Specific logs for AI operations (Groq/Gemini)
+  - Console output in development
+
+# HTTP Clients
+
+- Use **Axios** as default HTTP client for all external requests
+- Configure centralized instances in `src/config/axios.ts`
+- Specific instances for AI providers:
+  - `groqClient` for Groq API
+  - `geminiClient` for Google Gemini API
+- Always use `axios.isAxiosError()` to check error type
+- Use default configurations for simple cases, override for specific cases
+- Use TypeScript typing with interfaces for responses
+
+# Performance
+
+- Implement proper indexing in database queries
+- Use connection pooling
+- Implement cache where appropriate (Redis for AI responses)
+- Monitor and optimize slow queries
+- Asynchronous processing for itinerary generation (Bull/BullMQ)
+- AI response caching to optimize performance
+
+# Environment Configuration
+
+- Use environment variables for all sensitive data
+- Provide default values for development
+- Validate required environment variables on initialization with Zod
+- Use different configurations for different environments
+- AluTrip-specific variables:
+  - `GROQ_API_KEY` and `GROQ_MODEL` for Groq AI
+  - `GEMINI_API_KEY` and `GEMINI_MODEL` for Google Gemini
+  - `RATE_LIMIT_REQUESTS` and `RATE_LIMIT_WINDOW` for rate limiting
+  - `PDF_STORAGE_PATH` for PDF storage
+- Use `backend/.env.example` as base and validate variables with Zod on app boot
+
+# Code Quality
+
+- Follow TypeScript strict mode
+- Use appropriate type definitions
+- Implement proper error boundaries
+- Write self-documenting code with clear naming
+- Add JSDoc comments for complex functions
+
+# Deploy
+
+- Build process with `npm run build`
+- Use PM2 or similar for process management
+- Implement health check endpoints
+- Use environment-specific configurations
+- Implement graceful shutdown handling
+
+# Rate Limiting
+
+- Implement **IP-based** rate limiting (5 requests per 24h per feature)
+- Use specific middlewares for different types of endpoints
+- Configure via environment variables (`RATE_LIMIT_REQUESTS`, `RATE_LIMIT_WINDOW`)
+- Implement structured logging of rate limiting attempts
+- Rate limiting per feature: `travel_questions` and `itineraries`
+- Use Redis for rate limiting counter storage
+
+# Monitoring
+
+- Implement health check endpoints
+- Use structured logging for monitoring
+- Implement metrics collection
+- Configure error tracking and alerts
+- Monitor API performance and response times
+
+# AluTrip Specific Technologies
+
+## AI Integration
+- **Groq SDK**: For integration with Groq models (llama-3.1-70b-versatile)
+- **Google Generative AI**: For integration with Gemini (gemini-1.5-pro)
+- **Prompt Engineering**: Specific templates for travel questions and itinerary generation
+
+## PDF Generation
+- **Puppeteer**: For itinerary PDF generation
+- **Templates**: Professional layouts for travel documents
+- **Storage**: Local or S3 storage for generated PDFs
+
+## Queue System
+- **Bull/BullMQ**: For asynchronous itinerary generation processing
+- **Redis**: Backend for queues and cache
+- **Job Processing**: Workers for background processing
+
+## Database Schema
+- **travel_questions**: Travel questions and answers
+- **itineraries**: Itinerary data and processing status
+- **rate_limits**: IP-based rate limiting control
+- **conversations/messages**: Structure prepared for future chat
+
+# Start server
+```
+const PORT = config.port;
+
+app.listen(PORT, () => {
+  const baseUrl = `http://localhost:${PORT}`;
+  
+  // Server startup banner
+  console.log('\n' + '='.repeat(60));
+  console.log('🚀 AluTrip Travel Assistant API');
+  console.log('='.repeat(60));
+  console.log(`🌍 Environment: ${config.nodeEnv.toUpperCase()}`);
+  console.log(`📡 Server running on: ${baseUrl}`);
+  console.log(`🕐 Started at: ${new Date().toLocaleString()}`);
+  console.log('');
+  console.log('📍 AVAILABLE ENDPOINTS:');
+  console.log(`   🏥 Health Check: ${baseUrl}/health`);
+  console.log(`   📚 API Documentation: ${baseUrl}/docs`);
+  console.log(`   🔧 API Base: ${baseUrl}/api`);
+  console.log(`   🧳 Travel Q&A: ${baseUrl}/api/travel/ask`);
+  console.log(`   📋 Itinerary Planning: ${baseUrl}/api/itinerary/create`);
+  console.log('');
+  console.log('🛡️  SECURITY SETTINGS:');
+  console.log(`   🌐 CORS Origin: ${config.cors.origin}`);
+  console.log(`   🚫 No Authentication Required`);
+  console.log(`   📊 Rate Limiting: IP-based (5 requests/24h per feature)`);
+  console.log('');
+  
+  // Environment warnings
+  const warnings = [];
+  if (config.groqApiKey.includes('your-groq-api-key')) {
+    warnings.push('⚠️  Groq API Key is using default value');
+  }
+  if (config.geminiApiKey.includes('your-gemini-api-key')) {
+    warnings.push('⚠️  Gemini API Key is using default value');
+  }
+  
+  if (warnings.length > 0) {
+    console.log('⚠️  CONFIGURATION WARNINGS:');
+    warnings.forEach(warning => console.log(`   ${warning}`));
+    console.log('   💡 Create .env file with your actual AI API keys');
+    console.log('');
+  }
+  
+  console.log('💡 QUICK COMMANDS:');
+  console.log('   • Test API: curl ' + baseUrl + '/health');
+  console.log('   • View Docs: open ' + baseUrl + '/docs');
+  console.log('   • Stop Server: Ctrl+C');
+  console.log('='.repeat(60) + '\n');
+  
+  // Also log to winston
+  logger.info('='.repeat(60));
+  logger.info(`🌍 Environment: ${config.nodeEnv.toUpperCase()}`);
+  logger.info(`🚀 AluTrip Travel Assistant API server started on port ${PORT}`);
+  logger.info(`📚 API Documentation available at: ${baseUrl}/docs`);
+  logger.info(`🏥 Health check available at: ${baseUrl}/health`);
+  logger.info(`🛡️  SECURITY SETTINGS:
+   🌐 CORS Origin: ${config.cors.origin}
+   🚫 No Authentication Required
+   📊 Rate Limiting: IP-based`); 
+  logger.info('='.repeat(60));
+});
+```
