@@ -15,9 +15,9 @@ const envSchema = z.object({
   
   // AI Services
   GROQ_API_KEY: z.string().default('your-groq-api-key'),
-  GROQ_MODEL: z.string().default('llama-3.1-70b-versatile'),
+  GROQ_MODEL: z.string().default('llama3-8b-8192'),
   GEMINI_API_KEY: z.string().default('your-gemini-api-key'),
-  GEMINI_MODEL: z.string().default('gemini-1.5-pro'),
+  GEMINI_MODEL: z.string().default('gemini-2.5-flash'),
   
   // Rate Limiting
   RATE_LIMIT_REQUESTS: z.string().transform(Number).default('5'),

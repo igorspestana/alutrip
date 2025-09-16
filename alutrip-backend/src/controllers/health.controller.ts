@@ -1,11 +1,10 @@
 import { Request, Response } from 'express';
-import { checkDatabaseHealth } from '@/config/database';
-import { checkRedisHealth } from '@/config/redis';
-import { config } from '@/config/env';
-import { logger } from '@/config/logger';
-import { SuccessResponse, ErrorResponse, HttpStatusCode } from '@/types/api';
-import { HealthCheckResponse } from '@/types/api';
-import { asyncHandler } from '@/middleware/error-handler';
+import { checkDatabaseHealth } from '../config/database';
+import { checkRedisHealth } from '../config/redis';
+import { config } from '../config/env';
+import { logger } from '../config/logger';
+import { SuccessResponse, ErrorResponse, HttpStatusCode, HealthCheckResponse } from '../types/api';
+import { asyncHandler } from '../middleware/error-handler';
 
 class HealthController {
   // Basic health check

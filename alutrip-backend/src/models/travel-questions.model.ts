@@ -1,6 +1,6 @@
-import { query } from '@/config/database';
-import { logger } from '@/config/logger';
-import { TravelQuestion, AIModel } from '@/types/travel';
+import { query } from '../config/database';
+import { logger } from '../config/logger';
+import { TravelQuestion, AIModel } from '../types/travel';
 
 export class TravelQuestionsModel {
   // Create a new travel question

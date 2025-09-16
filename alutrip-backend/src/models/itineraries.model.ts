@@ -1,11 +1,11 @@
-import { query } from '@/config/database';
-import { logger } from '@/config/logger';
+import { query } from '../config/database';
+import { logger } from '../config/logger';
 import { 
   Itinerary, 
   ItineraryRequestData, 
   ProcessingStatus, 
   AIModel 
-} from '@/types/travel';
+} from '../types/travel';
 
 export class ItinerariesModel {
   // Create a new itinerary request

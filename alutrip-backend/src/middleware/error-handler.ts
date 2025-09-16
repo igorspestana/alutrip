@@ -1,7 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import { ZodError } from 'zod';
-import { logger } from '@/config/logger';
-import { ErrorResponse, ErrorType, HttpStatusCode, ValidationError } from '@/types/api';
+import { logger } from '../config/logger';
+import { ErrorResponse, ErrorType, HttpStatusCode, ValidationError } from '../types/api';
 
 export class AppError extends Error {
   public readonly statusCode: number;

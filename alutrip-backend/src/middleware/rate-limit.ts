@@ -1,9 +1,9 @@
 import { Request, Response, NextFunction } from 'express';
-import { config } from '@/config/env';
-import { incrementRateLimit, getRateLimit, getRateLimitTTL } from '@/config/redis';
-import { logRateLimit, logger } from '@/config/logger';
+import { config } from '../config/env';
+import { incrementRateLimit, getRateLimit, getRateLimitTTL } from '../config/redis';
+import { logRateLimit, logger } from '../config/logger';
 import { createRateLimitError } from './error-handler';
-import { RateLimitFeature, RateLimitInfo } from '@/types/travel';
+import { RateLimitFeature, RateLimitInfo } from '../types/travel';
 
 interface RateLimitConfig {
   windowMs: number;

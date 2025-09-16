@@ -24,19 +24,6 @@
     "noUncheckedIndexedAccess": true,
     "allowUnreachableCode": false,
     "allowUnusedLabels": false,
-    "baseUrl": "./src",
-    "paths": {
-      "@/*": ["./*"],
-      "@/config/*": ["./config/*"],
-      "@/controllers/*": ["./controllers/*"],
-      "@/services/*": ["./services/*"],
-      "@/models/*": ["./models/*"],
-      "@/middleware/*": ["./middleware/*"],
-      "@/routes/*": ["./routes/*"],
-      "@/schemas/*": ["./schemas/*"],
-      "@/utils/*": ["./utils/*"],
-      "@/types/*": ["./types/*"]
-    },
     "types": ["node", "jest"]
   },
   "include": [

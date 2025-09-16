@@ -1,7 +1,7 @@
 import fs from 'fs';
 import path from 'path';
-import { query, initializeDatabase } from '@/config/database';
-import { logger } from '@/config/logger';
+import { query, initializeDatabase } from '../src/config/database';
+import { logger } from '../src/config/logger';
 
 interface Migration {
   id: number;
