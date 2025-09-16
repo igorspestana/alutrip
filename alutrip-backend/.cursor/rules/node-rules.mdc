@@ -158,7 +158,7 @@ try {
   - `GEMINI_API_KEY` and `GEMINI_MODEL` for Google Gemini
   - `RATE_LIMIT_REQUESTS` and `RATE_LIMIT_WINDOW` for rate limiting
   - `PDF_STORAGE_PATH` for PDF storage
-- Use `backend/.env.example` as base and validate variables with Zod on app boot
+- Use `alutrip-backend/.env.example` as base and validate variables with Zod on app boot
 
 # Code Quality
 

@@ -1,0 +1,176 @@
+services:
+  # Database Services for Backend
+  postgres:
+    image: postgres:15-alpine
+    container_name: alutrip-postgres
+    environment:
+      POSTGRES_DB: alutrip_backend
+      POSTGRES_USER: ${POSTGRES_USER:-alutrip_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-your_postgres_password}
+      POSTGRES_INITDB_ARGS: "--encoding=UTF-8"
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./postgres/init:/docker-entrypoint-initdb.d
+    networks:
+      - alutrip-backend-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U alutrip_user -d alutrip_backend"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  redis:
+    image: redis:7-alpine
+    container_name: alutrip-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+      - ./redis/redis.conf:/usr/local/etc/redis/redis.conf
+    command: redis-server /usr/local/etc/redis/redis.conf
+    networks:
+      - alutrip-backend-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  # Database Administration Tool
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: alutrip-pgadmin
+    environment:
+      PGADMIN_DEFAULT_EMAIL: ${PGADMIN_EMAIL:-admin@alutrip.com}
+      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_PASSWORD:-your_pgadmin_password}
+      PGADMIN_CONFIG_SERVER_MODE: 'False'
+    ports:
+      - "8080:80"
+    volumes:
+      - pgadmin_data:/var/lib/pgadmin
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - alutrip-backend-network
+    restart: unless-stopped
+
+  # Redis UI (Redis Commander)
+  redis-commander:
+    image: rediscommander/redis-commander:latest
+    container_name: alutrip-redis-commander
+    environment:
+      - REDIS_HOSTS=local:redis:6379
+      - HTTP_USER=${REDIS_COMMANDER_USER:-admin}
+      - HTTP_PASSWORD=${REDIS_COMMANDER_PASSWORD:-your_redis_commander_password}
+    ports:
+      - "8001:8081"
+    depends_on:
+      redis:
+        condition: service_healthy
+    networks:
+      - alutrip-backend-network
+    restart: unless-stopped
+
+  # Backend Service
+  alutrip-backend:
+    build:
+      context: ..
+      dockerfile: Dockerfile
+      target: production
+    container_name: alutrip-backend-api
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=development
+      - PORT=3000
+      - DATABASE_URL=postgresql://${POSTGRES_USER:-alutrip_user}:${POSTGRES_PASSWORD:-your_postgres_password}@postgres:5432/alutrip_backend
+      - REDIS_URL=redis://redis:6379
+      - REDIS_QUEUE_URL=redis://redis:6379
+      - LOG_LEVEL=info
+      - CORS_ORIGIN=http://localhost:5173
+      - GROQ_API_KEY=${GROQ_API_KEY:-your-groq-api-key}
+      - GROQ_MODEL=${GROQ_MODEL:-llama-3.1-70b-versatile}
+      - GEMINI_API_KEY=${GEMINI_API_KEY:-your-gemini-api-key}
+      - GEMINI_MODEL=${GEMINI_MODEL:-gemini-1.5-pro}
+      - RATE_LIMIT_REQUESTS=5
+      - RATE_LIMIT_WINDOW=86400000
+      - PDF_STORAGE_PATH=/app/pdfs
+    volumes:
+      - ../logs:/app/logs
+      - ../pdfs:/app/pdfs
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - alutrip-backend-network
+    healthcheck:
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:3000/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    restart: unless-stopped
+
+  # Development Backend Service (for hot reload)
+  alutrip-backend-dev:
+    build:
+      context: ..
+      dockerfile: Dockerfile
+      target: builder
+    container_name: alutrip-backend-dev
+    ports:
+      - "3001:3000"
+    environment:
+      - NODE_ENV=development
+      - PORT=3000
+      - DATABASE_URL=postgresql://${POSTGRES_USER:-alutrip_user}:${POSTGRES_PASSWORD:-your_postgres_password}@postgres:5432/alutrip_backend
+      - REDIS_URL=redis://redis:6379
+      - REDIS_QUEUE_URL=redis://redis:6379
+      - LOG_LEVEL=debug
+      - CORS_ORIGIN=http://localhost:5173
+      - GROQ_API_KEY=${GROQ_API_KEY:-your-groq-api-key}
+      - GROQ_MODEL=${GROQ_MODEL:-llama-3.1-70b-versatile}
+      - GEMINI_API_KEY=${GEMINI_API_KEY:-your-gemini-api-key}
+      - GEMINI_MODEL=${GEMINI_MODEL:-gemini-1.5-pro}
+      - RATE_LIMIT_REQUESTS=5
+      - RATE_LIMIT_WINDOW=86400000
+      - PDF_STORAGE_PATH=/app/pdfs
+    volumes:
+      - ..:/app
+      - /app/node_modules
+      - ../logs:/app/logs
+      - ../pdfs:/app/pdfs
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - alutrip-backend-network
+    command: npm run dev
+    profiles:
+      - dev
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+    driver: local
+  redis_data:
+    driver: local
+  pgadmin_data:
+    driver: local
+  redisinsight_data:
+    driver: local
+
+networks:
+  alutrip-backend-network:
+    driver: bridge
+    name: alutrip-backend-network
+

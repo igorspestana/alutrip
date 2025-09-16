@@ -170,8 +170,8 @@ AluTrip follows a **hybrid architecture** pattern with independent backend and f
 **Structure:**
 ```
 alutrip/
-├── backend/          # Independent Node.js API
-├── frontend/         # Independent React application
+├── alutrip-backend/          # Independent Node.js API
+├── alutrip-frontend/         # Independent React application
 ├── docker/           # Joint development orchestration
 └── docs/             # Shared documentation
 ```
@@ -288,10 +288,10 @@ User Request → Frontend Form → API Gateway → Rate Limiter → Itinerary Se
 **Independent Development:**
 ```bash
 # Backend only
-cd backend && npm run dev
+cd alutrip-backend && npm run dev
 
 # Frontend only  
-cd frontend && npm run dev
+cd alutrip-frontend && npm run dev
 ```
 
 **Joint Development:**
