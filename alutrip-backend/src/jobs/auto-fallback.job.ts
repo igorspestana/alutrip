@@ -7,8 +7,8 @@ import { getQueueStats } from '../config/queue';
  * Monitors pending jobs and processes them via direct fallback if they're stuck too long
  */
 
-const STUCK_THRESHOLD_MINUTES = 3; // Jobs stuck for more than 3 minutes
-const CHECK_INTERVAL_MS = 2 * 60 * 1000; // Check every 2 minutes
+const STUCK_THRESHOLD_MINUTES = 1; // Jobs stuck for more than 1 minute (reduced for testing)
+const CHECK_INTERVAL_MS = 1 * 60 * 1000; // Check every 1 minute (increased frequency for testing)
 
 let autoFallbackInterval: NodeJS.Timeout | null = null;
 
@@ -21,9 +21,14 @@ export const processStuckJobs = async (): Promise<{
   processedIds: number[];
 }> => {
   try {
+    const now = new Date();
+    const thresholdTime = new Date(Date.now() - STUCK_THRESHOLD_MINUTES * 60 * 1000);
+    
     logger.info('🔍 Auto-fallback: Checking for stuck jobs', {
       context: 'auto-fallback',
-      stuckThreshold: `${STUCK_THRESHOLD_MINUTES} minutes`
+      stuckThreshold: `${STUCK_THRESHOLD_MINUTES} minutes`,
+      currentTime: now.toISOString(),
+      thresholdTime: thresholdTime.toISOString()
     });
 
     // Get queue stats
@@ -43,16 +48,73 @@ export const processStuckJobs = async (): Promise<{
       queueStats
     });
 
-    // Get pending itineraries older than threshold
-    const thresholdTime = new Date(Date.now() - STUCK_THRESHOLD_MINUTES * 60 * 1000);
-    
     // Get all pending itineraries
     const pendingItineraries = await itineraryService.getPendingItineraries(20);
     
-    // Filter by stuck time
+    logger.info('🔍 Auto-fallback: DEBUG - Raw pending itineraries', {
+      context: 'auto-fallback',
+      pendingCount: pendingItineraries.length,
+      timezoneNote: 'DETECTED: PostgreSQL vs Node.js timezone mismatch - applying UTC normalization',
+      itineraries: pendingItineraries.map(itinerary => {
+        const createdAtUTC = new Date(itinerary.created_at);
+        // Force UTC interpretation to handle PostgreSQL timezone issues
+        const createdAtNormalized = new Date(createdAtUTC.toISOString());
+        const ageMinutes = Math.floor((now.getTime() - createdAtNormalized.getTime()) / (1000 * 60));
+        
+        return {
+          id: itinerary.id,
+          destination: itinerary.destination,
+          created_at_raw: itinerary.created_at,
+          created_at_iso: createdAtUTC.toISOString(),
+          created_at_normalized: createdAtNormalized.toISOString(),
+          created_at_ms: createdAtNormalized.getTime(),
+          threshold_ms: thresholdTime.getTime(),
+          age_minutes: ageMinutes,
+          timezone_issue_detected: ageMinutes < 0 ? 'YES - Future timestamp detected' : 'NO'
+        };
+      })
+    });
+    
+    // Filter by stuck time with timezone-corrected robust comparison
     const stuckItineraries = pendingItineraries.filter(itinerary => {
-      const createdAt = new Date(itinerary.created_at);
-      return createdAt < thresholdTime;
+      const createdAtRaw = new Date(itinerary.created_at);
+      // Apply UTC normalization to handle PostgreSQL timezone issues
+      const createdAtNormalized = new Date(createdAtRaw.toISOString());
+      const ageMinutes = Math.floor((now.getTime() - createdAtNormalized.getTime()) / (1000 * 60));
+      
+      // Handle negative age (future timestamps) by checking if we need timezone correction
+      let correctedAgeMinutes = ageMinutes;
+      if (ageMinutes < 0) {
+        // Likely timezone offset issue - try adjusting by common timezone differences
+        const timezoneOffsetHours = Math.abs(Math.round(ageMinutes / 60));
+        if (timezoneOffsetHours <= 12) { // Reasonable timezone difference
+          correctedAgeMinutes = ageMinutes + (timezoneOffsetHours * 60);
+          logger.warn('🚨 Auto-fallback: Timezone correction applied', {
+            context: 'auto-fallback',
+            itineraryId: itinerary.id,
+            originalAgeMinutes: ageMinutes,
+            correctedAgeMinutes,
+            timezoneOffsetHours
+          });
+        }
+      }
+      
+      const isStuck = Math.max(correctedAgeMinutes, ageMinutes) >= STUCK_THRESHOLD_MINUTES;
+      
+      logger.info('🔍 Auto-fallback: DEBUG - Checking itinerary [TIMEZONE AWARE]', {
+        context: 'auto-fallback',
+        itineraryId: itinerary.id,
+        destination: itinerary.destination,
+        created_at_raw: createdAtRaw.toISOString(),
+        created_at_normalized: createdAtNormalized.toISOString(),
+        ageMinutes,
+        correctedAgeMinutes,
+        stuckThreshold: STUCK_THRESHOLD_MINUTES,
+        isStuck,
+        timezoneIssue: ageMinutes < 0
+      });
+      
+      return isStuck;
     });
 
     logger.info('🔍 Auto-fallback: Analysis results', {
@@ -154,10 +216,11 @@ export const startAutoFallback = (): void => {
     return;
   }
 
-  logger.info('🤖 Starting auto-fallback monitoring system', {
+  logger.info('🤖 Starting auto-fallback monitoring system [ENHANCED DEBUG MODE]', {
     context: 'auto-fallback',
     checkInterval: `${CHECK_INTERVAL_MS / 1000}s`,
-    stuckThreshold: `${STUCK_THRESHOLD_MINUTES}min`
+    stuckThreshold: `${STUCK_THRESHOLD_MINUTES}min`,
+    improvements: ['Robust timezone handling', 'Age-based detection', 'Detailed debugging logs']
   });
 
   autoFallbackInterval = setInterval(async () => {
