@@ -3,6 +3,10 @@ import { GoogleGenerativeAI } from '@google/generative-ai';
 import { logger } from '../config/logger';
 import { config } from '../config/env';
 import { AIModel, AIServiceResponse } from '../types/travel';
+import { 
+  TRAVEL_KEYWORDS, 
+  NON_TRAVEL_KEYWORDS 
+} from '../constants/keywords';
 import axios from 'axios';
 
 /**
@@ -40,18 +44,46 @@ export class AIService {
         questionLength: question.length,
         sessionId
       });
+
+      // First, check if the question is travel-related
+      const isTravelRelated = this.isTravelRelatedQuestion(question);
+      
+      if (!isTravelRelated) {
+        logger.info('Question filtered as non-travel related', {
+          context: 'ai',
+          model,
+          question: question.substring(0, 100) + '...',
+          sessionId
+        });
+
+        // Return a polite decline response without using AI
+        const declineMessage = 
+          'Olá! Eu sou o AluTrip, seu assistente de viagem! Eu estou aqui para ajudar você com tudo que envolve destinos, hospedagens, passeios, restaurantes e dicas de viagem. ' +
+          'Essa pergunta que você fez foge um pouquinho do tema de viagens, mas se quiser, pode me mandar uma dúvida sobre sua próxima aventura que vou adorar ajudar!';
+        
+        return {
+          content: declineMessage,
+          model_used: model,
+          token_usage: {
+            prompt_tokens: 0,
+            completion_tokens: 0,
+            total_tokens: 0
+          },
+          processing_time_ms: Date.now() - startTime
+        };
+      }
       
       let response: AIServiceResponse;
       
       switch (model) {
-        case 'groq':
-          response = await this.processWithGroq(question, sessionId);
-          break;
-        case 'gemini':
-          response = await this.processWithGemini(question, sessionId);
-          break;
-        default:
-          throw new Error(`Unsupported AI model: ${model}`);
+      case 'groq':
+        response = await this.processWithGroq(question, sessionId);
+        break;
+      case 'gemini':
+        response = await this.processWithGemini(question, sessionId);
+        break;
+      default:
+        throw new Error(`Unsupported AI model: ${model}`);
       }
       
       const totalTime = Date.now() - startTime;
@@ -83,13 +115,17 @@ export class AIService {
       // Create AI service specific error
       const aiError = new Error(
         `Failed to process question with ${model}: ${(error as Error).message}`
-      ) as any;
+      ) as Error & { provider: string; status?: number; code?: string };
       aiError.provider = model;
       
       // Add specific error codes if available
       if (axios.isAxiosError(error)) {
-        aiError.status = error.response?.status;
-        aiError.code = error.code;
+        if (error.response?.status) {
+          aiError.status = error.response.status;
+        }
+        if (error.code) {
+          aiError.code = error.code;
+        }
       }
       
       throw aiError;
@@ -192,43 +228,148 @@ export class AIService {
   }
 
   /**
+   * Check if a question is travel-related using simple keyword analysis
+   * Prioritizes usability by being permissive rather than restrictive
+   */
+  private isTravelRelatedQuestion(question: string): boolean {
+    const lowerQuestion = question.toLowerCase().trim();
+    
+    // If question is too short or empty, reject
+    if (lowerQuestion.length < 3) {
+      return false;
+    }
+    
+    // Count travel-related keywords
+    const travelScore = TRAVEL_KEYWORDS.reduce((score, keyword) => {
+      return score + (lowerQuestion.includes(keyword) ? 1 : 0);
+    }, 0);
+    
+    // Count non-travel keywords
+    const nonTravelScore = NON_TRAVEL_KEYWORDS.reduce((score, keyword) => {
+      return score + (lowerQuestion.includes(keyword) ? 1 : 0);
+    }, 0);
+    
+    // BALANCED DECISION LOGIC - Balance usability with proper filtering
+    
+    // 1. If there are travel keywords, always allow
+    if (travelScore > 0) {
+      logger.info('Question accepted: travel keywords detected', {
+        context: 'ai',
+        travelScore,
+        nonTravelScore,
+        question: question.substring(0, 100)
+      });
+      return true;
+    }
+    
+    // 2. Reject if there are non-travel keywords (even just one) AND no travel keywords
+    if (nonTravelScore > 0 && travelScore === 0) {
+      logger.info('Question rejected: non-travel keywords without travel context', {
+        context: 'ai',
+        nonTravelScore,
+        travelScore,
+        question: question.substring(0, 100)
+      });
+      return false;
+    }
+    
+    // 3. Default to accepting questions for better usability (only when no clear indicators)
+    logger.info('Question accepted: default acceptance for usability', {
+      context: 'ai',
+      travelScore,
+      nonTravelScore,
+      question: question.substring(0, 100)
+    });
+    return true;
+  }
+
+  /**
    * Build travel-specific prompt with context
    */
   private buildTravelPrompt(question: string): string {
     return `
-Travel Question: ${question}
+Pergunta sobre Viagem: ${question}
 
-Please provide a comprehensive and helpful response about this travel-related question.
-Include specific recommendations, practical tips, and relevant details that would be valuable for trip planning.
-If the question involves destinations, include information about best times to visit, local customs, budget considerations, and must-see attractions.
-Keep the response informative yet concise, focusing on actionable travel advice.
+Por favor, forneça uma resposta abrangente e útil sobre esta pergunta relacionada a viagens.
+Inclua recomendações específicas, dicas práticas e detalhes relevantes que seriam valiosos 
+para o planejamento da viagem.
+Se a pergunta envolve destinos, inclua informações sobre melhores épocas para visitar, 
+costumes locais, considerações de orçamento e atrações imperdíveis.
+Mantenha a resposta informativa, mas concisa, focando em conselhos práticos de viagem.
 `;
   }
 
   /**
-   * Get system prompt for travel assistant
+   * Get system prompt for travel assistant with strict guardrails
    */
   private getSystemPrompt(): string {
-    return `You are AluTrip, an expert travel assistant AI that helps people plan amazing trips without any bureaucracy or barriers.
+    const basePrompt = `Você é o AluTrip, um assistente de viagem especializado em IA que ajuda as pessoas a 
+planejar viagens incríveis sem burocracia ou barreiras.
 
-Your role:
-- Provide accurate, helpful, and personalized travel advice
-- Share practical tips about destinations, accommodations, transportation, and activities
-- Consider budget, time, and personal preferences in your recommendations
-- Offer insider knowledge about local customs, best times to visit, and hidden gems
-- Help with itinerary planning, packing suggestions, and travel logistics
-- Be enthusiastic and encouraging while being realistic about expectations
+🚨 REGRAS CRÍTICAS E OBRIGATÓRIAS 🚨
 
-Guidelines:
-- Always be helpful, friendly, and encouraging
-- Provide specific, actionable advice rather than generic responses
-- Include practical details like approximate costs, timing, and booking tips
-- Mention potential challenges or considerations travelers should know
-- Suggest alternatives when appropriate
-- Keep responses comprehensive but not overwhelming
-- Use a conversational, approachable tone
+1. VOCÊ DEVE responder APENAS e EXCLUSIVAMENTE a perguntas relacionadas a:
+   - Destinos turísticos e lugares para visitar
+   - Planejamento de viagens e itinerários
+   - Hospedagem (hotéis, pousadas, resorts, etc.)
+   - Transporte (voos, trens, ônibus, carros, etc.)
+   - Atividades turísticas e passeios
+   - Restaurantes e gastronomia local
+   - Dicas de viagem e preparação
+   - Cultura local e costumes
+   - Segurança em viagens
+   - Documentação necessária (passaporte, visto, etc.)
+   - Orçamento e custos de viagem
+   - Melhor época para viajar
+   - O que levar na mala
 
-Focus areas: destination guides, trip planning, budget travel, luxury travel, solo travel, family travel, adventure travel, cultural experiences, food and dining, accommodation advice, transportation options, travel safety, and local customs.`;
+2. SE A PERGUNTA NÃO FOR SOBRE VIAGEM, você DEVE:
+   - Imediatamente recusar responder
+   - Usar EXATAMENTE a mensagem padrão de recusa
+   - NÃO dar nenhuma informação sobre o tópico perguntado
+   - NÃO tentar ajudar com o assunto não relacionado a viagem
+
+3. TÓPICOS PROIBIDOS (NÃO RESPONDA):
+   - Tecnologia, programação, software, IA, desenvolvimento
+   - Saúde, medicina, sintomas, tratamentos, medicamentos
+   - Questões legais, advogados, processos, contratos
+   - Finanças, investimentos, criptomoedas, bancos
+   - Política, eleições, governo, economia
+   - Relacionamentos, namoro, casamento, família
+   - Educação, estudos, cursos, universidades
+   - Esportes (exceto se relacionado a viagem)
+   - Entretenimento (filmes, séries, música - exceto se relacionado a viagem)
+   - Trabalho, carreira, empregos
+   - Qualquer assunto que não seja diretamente sobre viagem`;
+
+    const refusalMessage = `4. MENSAGEM OBRIGATÓRIA DE RECUSA:
+   "Olá! Eu sou o AluTrip, seu assistente de viagem! Eu estou aqui para ajudar você com tudo que envolve destinos, hospedagens, passeios, restaurantes e dicas de viagem. Essa pergunta que você fez foge um pouquinho do tema de viagens, mas se quiser, pode me mandar uma dúvida sobre sua próxima aventura que vou adorar ajudar!"`;
+
+    const validationRules = `5. VALIDAÇÃO OBRIGATÓRIA:
+   - Antes de responder, SEMPRE analise se a pergunta é sobre viagem
+   - Se houver DÚVIDA, prefira recusar a responder
+   - Seja EXTREMAMENTE restritivo - é melhor recusar uma pergunta válida do que responder uma inválida
+
+Seu papel (APENAS para perguntas sobre viagem):
+- Fornecer conselhos de viagem precisos, úteis e personalizados
+- Compartilhar dicas práticas sobre destinos, hospedagens, transporte e atividades
+- Considerar orçamento, tempo e preferências pessoais em suas recomendações
+- Oferecer conhecimento sobre costumes locais, melhores épocas para visitar
+- Ajudar com planejamento de itinerário, sugestões de bagagem e logística
+- Ser entusiasmado e encorajador, mas realista sobre as expectativas
+
+Diretrizes para respostas sobre viagem:
+- Sempre seja útil, amigável e encorajador
+- Forneça conselhos específicos e acionáveis
+- Inclua detalhes práticos como custos aproximados, horários e dicas de reserva
+- Mencione desafios potenciais ou considerações importantes
+- Sugira alternativas quando apropriado
+- Mantenha as respostas abrangentes, mas não esmagadoras
+- Use um tom conversacional e acessível
+
+LEMBRE-SE: Sua função é SER UM ASSISTENTE DE VIAGEM. Qualquer pergunta que não seja sobre viagem deve ser recusada imediatamente com a mensagem padrão.`;
+
+    return `${basePrompt} ${refusalMessage} ${validationRules}`;
   }
 
   /**
@@ -276,7 +417,7 @@ Focus areas: destination guides, trip planning, budget travel, luxury travel, so
   getModelInfo(): {
     groq: { model: string; available: boolean };
     gemini: { model: string; available: boolean };
-  } {
+    } {
     return {
       groq: {
         model: config.GROQ_MODEL,

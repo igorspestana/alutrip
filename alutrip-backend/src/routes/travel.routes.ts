@@ -28,7 +28,7 @@ const travelRateLimit = travelQuestionsRateLimit;
  *           type: string
  *           minLength: 10
  *           maxLength: 1000
- *           description: The travel question to ask
+ *           description: The travel question to ask. Only travel-related questions will be answered - non-travel questions will receive a polite decline response.
  *           example: "What's the best time to visit Japan?"
  *         model:
  *           type: string
@@ -109,7 +109,7 @@ const travelRateLimit = travelQuestionsRateLimit;
  *     tags:
  *       - Travel Q&A
  *     summary: Submit a travel question
- *     description: Submit a travel question and receive an AI-generated response using either Groq or Gemini models
+ *     description: Submit a travel question and receive an AI-generated response using either Groq or Gemini models. The system includes guardrails to ensure only travel-related questions are answered - non-travel questions will receive a polite decline response.
  *     requestBody:
  *       required: true
  *       content:
