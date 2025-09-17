@@ -1,4 +1,4 @@
-import { Job } from 'bull';
+import { Job } from 'bullmq';
 import { logger } from '../config/logger';
 import { itineraryService } from '../services/itinerary.service';
 
@@ -12,26 +12,25 @@ export interface ItineraryJobData {
 }
 
 /**
- * Process itinerary generation job
+ * Process itinerary generation job (BullMQ)
  */
 export const processItineraryJob = async (job: Job<ItineraryJobData>): Promise<void> => {
   const { itineraryId } = job.data;
   const startTime = Date.now();
 
   try {
-    logger.info('Starting itinerary generation job', {
+    logger.info('Starting BullMQ itinerary generation job', {
       context: 'job',
       jobId: job.id,
       itineraryId,
       jobName: job.name,
-      jobQueue: job.queue.name,
       jobAttempts: job.attemptsMade,
       jobOpts: job.opts
     });
 
     // Update job progress
-    await job.progress(10);
-    logger.info('Job progress updated to 10%', {
+    await job.updateProgress(10);
+    logger.info('BullMQ job progress updated to 10%', {
       context: 'job',
       jobId: job.id,
       itineraryId
@@ -53,8 +52,8 @@ export const processItineraryJob = async (job: Job<ItineraryJobData>): Promise<v
     });
 
     // Update job progress
-    await job.progress(100);
-    logger.info('Job progress updated to 100%', {
+    await job.updateProgress(100);
+    logger.info('BullMQ job progress updated to 100%', {
       context: 'job',
       jobId: job.id,
       itineraryId
@@ -62,7 +61,7 @@ export const processItineraryJob = async (job: Job<ItineraryJobData>): Promise<v
 
     const processingTime = Date.now() - startTime;
 
-    logger.info('Itinerary generation job completed successfully', {
+    logger.info('BullMQ itinerary generation job completed successfully', {
       context: 'job',
       jobId: job.id,
       itineraryId,
@@ -72,7 +71,7 @@ export const processItineraryJob = async (job: Job<ItineraryJobData>): Promise<v
   } catch (error) {
     const processingTime = Date.now() - startTime;
 
-    logger.error('Itinerary generation job failed', {
+    logger.error('BullMQ itinerary generation job failed', {
       context: 'job',
       jobId: job.id,
       itineraryId,

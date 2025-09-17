@@ -1,14 +1,14 @@
-import Queue from 'bull';
+import { Queue, Worker } from 'bullmq';
 import Redis from 'ioredis';
 import { config } from './env';
 import { logger } from './logger';
 
 /**
  * Queue configuration and setup for background job processing
- * Uses Bull with Redis for reliable job queue management
+ * Uses BullMQ with Redis for reliable job queue management
  */
 
-// Create Redis connection for Bull
+// Create Redis connection for BullMQ
 const redisUrl = config.REDIS_QUEUE_URL || config.REDIS_URL;
 const redisOptions = {
   host: redisUrl.includes('://') 
@@ -17,16 +17,15 @@ const redisOptions = {
   port: redisUrl.includes('://') 
     ? parseInt(new URL(redisUrl).port || '6379') || 6379
     : parseInt(redisUrl.split(':')[1] || '6379') || 6379,
-  maxRetriesPerRequest: 3,
+  maxRetriesPerRequest: null, // Required for BullMQ
   retryDelayOnFailover: 100,
-  lazyConnect: true,
-  connectTimeout: 10000,
-  commandTimeout: 5000,
+  connectTimeout: 30000,
+  commandTimeout: 30000, // Increased for BullMQ operations
 };
 
-// Create Bull queue for itinerary processing
-export const itineraryQueue = new Queue('itinerary processing', {
-  redis: redisOptions,
+// Create BullMQ queue for itinerary processing
+export const itineraryQueue = new Queue('itinerary_processing', {
+  connection: redisOptions,
   defaultJobOptions: {
     removeOnComplete: 10, // Keep last 10 completed jobs
     removeOnFail: 5, // Keep last 5 failed jobs
@@ -37,60 +36,16 @@ export const itineraryQueue = new Queue('itinerary processing', {
     },
     delay: 1000, // 1 second delay before processing
   },
-  settings: {
-    stalledInterval: 30000, // 30 seconds
-    maxStalledCount: 1,
-    retryProcessDelay: 5000,
-  }
 });
+
+// BullMQ Worker instance (will be created in worker.ts)
+export let itineraryWorker: Worker | null = null;
 
 // Queue event listeners for monitoring and logging
-itineraryQueue.on('ready', () => {
-  logger.info('Itinerary queue is ready', { context: 'queue' });
-});
-
 itineraryQueue.on('error', (error: Error) => {
   logger.error('Itinerary queue error', { 
     context: 'queue', 
     error: error.message 
-  });
-});
-
-itineraryQueue.on('failed', (job, error: Error) => {
-  logger.error('Itinerary job failed', { 
-    context: 'queue',
-    jobId: job.id,
-    itineraryId: job.data.itineraryId,
-    error: error.message,
-    attempts: job.attemptsMade,
-    maxAttempts: job.opts.attempts
-  });
-});
-
-itineraryQueue.on('completed', (job, result) => {
-  logger.info('Itinerary job completed', { 
-    context: 'queue',
-    jobId: job.id,
-    itineraryId: job.data.itineraryId,
-    processingTime: job.processedOn ? Date.now() - job.processedOn : 'unknown',
-    result: result ? 'success' : 'unknown'
-  });
-});
-
-itineraryQueue.on('stalled', (job) => {
-  logger.warn('Itinerary job stalled', { 
-    context: 'queue',
-    jobId: job.id,
-    itineraryId: job.data.itineraryId
-  });
-});
-
-itineraryQueue.on('progress', (job, progress: number) => {
-  logger.info('Itinerary job progress', { 
-    context: 'queue',
-    jobId: job.id,
-    itineraryId: job.data.itineraryId,
-    progress: `${progress}%`
   });
 });
 
@@ -99,19 +54,16 @@ itineraryQueue.on('progress', (job, progress: number) => {
  */
 export const initializeQueue = async (): Promise<void> => {
   try {
-    logger.info('Initializing queue system', { context: 'queue' });
+    logger.info('Initializing BullMQ queue system', { context: 'queue' });
 
     // Test Redis connection
     const testRedis = new Redis(redisOptions);
     await testRedis.ping();
     await testRedis.quit();
 
-    // Check if queue is ready
-    await itineraryQueue.isReady();
-
-    logger.info('Queue system initialized successfully', { context: 'queue' });
+    logger.info('BullMQ queue system initialized successfully', { context: 'queue' });
   } catch (error) {
-    logger.error('Failed to initialize queue system', { 
+    logger.error('Failed to initialize BullMQ queue system', { 
       context: 'queue',
       error: (error as Error).message 
     });
@@ -124,13 +76,16 @@ export const initializeQueue = async (): Promise<void> => {
  */
 export const closeQueue = async (): Promise<void> => {
   try {
-    logger.info('Closing queue connections', { context: 'queue' });
+    logger.info('Closing BullMQ queue connections', { context: 'queue' });
 
     await itineraryQueue.close();
+    if (itineraryWorker) {
+      await itineraryWorker.close();
+    }
 
-    logger.info('Queue connections closed', { context: 'queue' });
+    logger.info('BullMQ queue connections closed', { context: 'queue' });
   } catch (error) {
-    logger.error('Error closing queue connections', { 
+    logger.error('Error closing BullMQ queue connections', { 
       context: 'queue',
       error: (error as Error).message 
     });
@@ -196,7 +151,7 @@ export const getQueueStats = async (): Promise<{
       paused
     };
   } catch (error) {
-    logger.error('Failed to get queue stats', {
+    logger.error('Failed to get BullMQ queue stats', {
       context: 'queue',
       error: (error as Error).message
     });
@@ -209,21 +164,21 @@ export const getQueueStats = async (): Promise<{
  */
 export const cleanQueue = async (olderThan: number = 24 * 60 * 60 * 1000): Promise<void> => {
   try {
-    logger.info('Starting queue cleanup', { 
+    logger.info('Starting BullMQ queue cleanup', { 
       context: 'queue',
       olderThan: `${olderThan / 1000 / 60 / 60} hours`
     });
 
-    const cleaned = await itineraryQueue.clean(olderThan, 'completed');
-    const cleanedFailed = await itineraryQueue.clean(olderThan, 'failed');
+    const cleaned = await itineraryQueue.clean(olderThan, 0, 'completed');
+    const cleanedFailed = await itineraryQueue.clean(olderThan, 0, 'failed');
 
-    logger.info('Queue cleanup completed', {
+    logger.info('BullMQ queue cleanup completed', {
       context: 'queue',
       cleanedCompleted: cleaned.length,
       cleanedFailed: cleanedFailed.length
     });
   } catch (error) {
-    logger.error('Queue cleanup failed', {
+    logger.error('BullMQ queue cleanup failed', {
       context: 'queue',
       error: (error as Error).message
     });
@@ -242,13 +197,13 @@ export const cleanStalledJobs = async (): Promise<{
     logger.info('Starting cleanup of stuck/stalled jobs', { context: 'queue' });
 
     // Clean stalled jobs (older than 5 minutes) 
-    const stalledCleaned = await itineraryQueue.clean(5 * 60 * 1000, 'stalled' as any);
+    const stalledCleaned = await itineraryQueue.clean(5 * 60 * 1000, 0, 'failed');
     
     // Clean old waiting jobs (older than 30 minutes)
-    const waitingCleaned = await itineraryQueue.clean(30 * 60 * 1000, 'waiting' as any);
+    const waitingCleaned = await itineraryQueue.clean(30 * 60 * 1000, 0, 'waiting');
     
     // Clean active jobs that are too old (older than 60 minutes)
-    const activeCleaned = await itineraryQueue.clean(60 * 60 * 1000, 'active');
+    const activeCleaned = await itineraryQueue.clean(60 * 60 * 1000, 0, 'active');
 
     const result = {
       stalledCleaned: stalledCleaned.length,
@@ -256,14 +211,14 @@ export const cleanStalledJobs = async (): Promise<{
       activeCleaned: activeCleaned.length
     };
 
-    logger.info('Stuck/stalled jobs cleanup completed', {
+    logger.info('BullMQ stuck/stalled jobs cleanup completed', {
       context: 'queue',
       ...result
     });
 
     return result;
   } catch (error) {
-    logger.error('Failed to clean stuck/stalled jobs', {
+    logger.error('Failed to clean BullMQ stuck/stalled jobs', {
       context: 'queue',
       error: (error as Error).message
     });
@@ -283,16 +238,16 @@ export const emergencyQueueCleanup = async (): Promise<{
   delayedCleaned: number;
 }> => {
   try {
-    logger.warn('Starting EMERGENCY queue cleanup - removing ALL jobs', { 
+    logger.warn('Starting EMERGENCY BullMQ queue cleanup - removing ALL jobs', { 
       context: 'queue' 
     });
 
     const [completed, failed, active, waiting, delayed] = await Promise.all([
-      itineraryQueue.clean(0, 'completed'),
-      itineraryQueue.clean(0, 'failed'), 
-      itineraryQueue.clean(0, 'active'),
-      itineraryQueue.clean(0, 'waiting' as any),
-      itineraryQueue.clean(0, 'delayed')
+      itineraryQueue.clean(0, 0, 'completed'),
+      itineraryQueue.clean(0, 0, 'failed'), 
+      itineraryQueue.clean(0, 0, 'active'),
+      itineraryQueue.clean(0, 0, 'waiting'),
+      itineraryQueue.clean(0, 0, 'delayed')
     ]);
 
     const result = {
@@ -303,7 +258,7 @@ export const emergencyQueueCleanup = async (): Promise<{
       delayedCleaned: delayed.length
     };
 
-    logger.warn('EMERGENCY queue cleanup completed', {
+    logger.warn('EMERGENCY BullMQ queue cleanup completed', {
       context: 'queue',
       ...result,
       totalCleaned: Object.values(result).reduce((sum, count) => sum + count, 0)
@@ -311,7 +266,7 @@ export const emergencyQueueCleanup = async (): Promise<{
 
     return result;
   } catch (error) {
-    logger.error('Emergency queue cleanup failed', {
+    logger.error('Emergency BullMQ queue cleanup failed', {
       context: 'queue',
       error: (error as Error).message
     });
@@ -387,7 +342,7 @@ export const getDetailedQueueInfo = async (): Promise<{
 };
 
 /**
- * Health check for queue system
+ * Health check for BullMQ queue system
  */
 export const queueHealthCheck = async (): Promise<{
   status: 'healthy' | 'unhealthy';

@@ -1,5 +1,6 @@
+import { Worker } from 'bullmq';
 import { itineraryQueue } from '../config/queue';
-import { processItineraryJob, setupJobHandlers } from './itinerary-generation.job';
+import { processItineraryJob } from './itinerary-generation.job';
 import { config } from '../config/env';
 import { logger } from '../config/logger';
 
@@ -8,62 +9,94 @@ import { logger } from '../config/logger';
  * Handles concurrent job processing with configurable concurrency
  */
 
+// Redis configuration for BullMQ Worker
+const redisConfig = {
+  host: 'localhost',
+  port: 6379,
+  maxRetriesPerRequest: null, // Required for BullMQ
+  retryDelayOnFailover: 100,
+  connectTimeout: 30000,
+  commandTimeout: 30000, // Increased for BullMQ operations
+};
+
 /**
- * Start the job worker
+ * Start the BullMQ job worker
  */
 export const startWorker = async (): Promise<void> => {
   try {
-    logger.info('Starting job worker', {
+    logger.info('Starting BullMQ job worker', {
       context: 'worker',
       concurrency: config.QUEUE_CONCURRENCY
     });
 
-    // Wait for queue to be ready
-    logger.info('Waiting for queue to be ready...', {
-      context: 'worker'
-    });
-    await itineraryQueue.isReady();
-    
-    logger.info('Queue is ready, setting up job handlers...', {
-      context: 'worker'
+    // Create BullMQ Worker
+    const worker = new Worker('itinerary_processing', processItineraryJob, {
+      connection: redisConfig,
+      concurrency: config.QUEUE_CONCURRENCY,
     });
 
-    // Setup job handlers
-    setupJobHandlers();
+    // Store worker reference globally for cleanup
+    (global as any).itineraryWorker = worker;
 
-    // Process itinerary jobs with explicit logging
-    logger.info('Registering job processor...', {
-      context: 'worker',
-      jobType: 'process-itinerary',
-      concurrency: config.QUEUE_CONCURRENCY
+    // Event listeners for monitoring and logging
+    worker.on('ready', () => {
+      logger.info('BullMQ worker is ready', { context: 'worker' });
     });
-    
-    itineraryQueue.process(
-      'process-itinerary',
-      config.QUEUE_CONCURRENCY,
-      processItineraryJob
-    );
 
-    // Add additional event listeners for debugging
-    itineraryQueue.on('waiting', (jobId) => {
-      logger.info('Job is waiting to be processed', {
-        context: 'worker',
-        jobId: jobId
+    worker.on('error', (error: Error) => {
+      logger.error('BullMQ worker error', { 
+        context: 'worker', 
+        error: error.message 
       });
     });
 
-    itineraryQueue.on('active', (job, _jobPromise) => {
-      logger.info('Job started processing', {
+    worker.on('active', (job) => {
+      logger.info('BullMQ job started processing', {
         context: 'worker',
         jobId: job.id,
         jobData: job.data
       });
     });
 
-    logger.info('Job worker started successfully', {
+    worker.on('completed', (job, result) => {
+      logger.info('BullMQ job completed successfully', {
+        context: 'worker',
+        jobId: job.id,
+        itineraryId: job.data.itineraryId,
+        result: result !== undefined ? 'success' : 'unknown'
+      });
+    });
+
+    worker.on('failed', (job, error: Error) => {
+      logger.error('BullMQ job failed', {
+        context: 'worker',
+        jobId: job?.id,
+        itineraryId: job?.data?.itineraryId,
+        error: error.message,
+        attempts: job?.attemptsMade
+      });
+    });
+
+    worker.on('stalled', (jobId) => {
+      logger.warn('BullMQ job stalled', { 
+        context: 'worker',
+        jobId
+      });
+    });
+
+    worker.on('progress', (job, progress) => {
+      logger.info('BullMQ job progress', { 
+        context: 'worker',
+        jobId: job.id,
+        itineraryId: job.data.itineraryId,
+        progress: typeof progress === 'number' ? `${progress}%` : progress
+      });
+    });
+
+    logger.info('BullMQ job worker started successfully', {
       context: 'worker',
       concurrency: config.QUEUE_CONCURRENCY,
-      queueName: 'itinerary processing',
+      queueName: 'itinerary_processing',
       processingJobType: 'process-itinerary'
     });
 
@@ -72,21 +105,21 @@ export const startWorker = async (): Promise<void> => {
       const waiting = await itineraryQueue.getWaiting();
       const active = await itineraryQueue.getActive();
       
-      logger.info('Current queue status after worker start', {
+      logger.info('Current BullMQ queue status after worker start', {
         context: 'worker',
         waitingJobs: waiting.length,
         activeJobs: active.length,
         waitingJobIds: waiting.map(j => ({ id: j.id, data: j.data }))
       });
     } catch (statsError) {
-      logger.error('Could not get queue stats', {
+      logger.error('Could not get BullMQ queue stats', {
         context: 'worker',
         error: (statsError as Error).message
       });
     }
 
   } catch (error) {
-    logger.error('Failed to start job worker', {
+    logger.error('Failed to start BullMQ job worker', {
       context: 'worker',
       error: (error as Error).message
     });
@@ -95,18 +128,24 @@ export const startWorker = async (): Promise<void> => {
 };
 
 /**
- * Stop the job worker
+ * Stop the BullMQ job worker
  */
 export const stopWorker = async (): Promise<void> => {
   try {
-    logger.info('Stopping job worker', { context: 'worker' });
+    logger.info('Stopping BullMQ job worker', { context: 'worker' });
+
+    // Close worker if it exists
+    const worker = (global as any).itineraryWorker;
+    if (worker) {
+      await worker.close();
+    }
 
     // Close queue connections
     await itineraryQueue.close();
 
-    logger.info('Job worker stopped', { context: 'worker' });
+    logger.info('BullMQ job worker stopped', { context: 'worker' });
   } catch (error) {
-    logger.error('Error stopping job worker', {
+    logger.error('Error stopping BullMQ job worker', {
       context: 'worker',
       error: (error as Error).message
     });
