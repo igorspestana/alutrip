@@ -74,8 +74,10 @@ export class ItinerariesModel {
       const itinerary = result.rows[0];
       
       if (itinerary) {
-        // Parse JSON fields
-        itinerary.request_data = JSON.parse(itinerary.request_data);
+        // Parse JSON fields if they are strings
+        if (typeof itinerary.request_data === 'string') {
+          itinerary.request_data = JSON.parse(itinerary.request_data);
+        }
       }
       
       return itinerary || null;
@@ -106,7 +108,9 @@ export class ItinerariesModel {
       const itinerary = result.rows[0];
       
       if (itinerary) {
-        itinerary.request_data = JSON.parse(itinerary.request_data);
+        if (typeof itinerary.request_data === 'string') {
+          itinerary.request_data = JSON.parse(itinerary.request_data);
+        }
       }
       
       logger.info('Itinerary status updated', {
@@ -146,7 +150,9 @@ export class ItinerariesModel {
       const itinerary = result.rows[0];
       
       if (itinerary) {
-        itinerary.request_data = JSON.parse(itinerary.request_data);
+        if (typeof itinerary.request_data === 'string') {
+          itinerary.request_data = JSON.parse(itinerary.request_data);
+        }
       }
       
       logger.info('Itinerary content updated', {
@@ -193,7 +199,9 @@ export class ItinerariesModel {
       
       const itineraries = dataResult.rows.map((itinerary: any) => ({
         ...itinerary,
-        request_data: JSON.parse(itinerary.request_data)
+        request_data: typeof itinerary.request_data === 'string' 
+          ? JSON.parse(itinerary.request_data) 
+          : itinerary.request_data
       }));
       
       return {
@@ -229,7 +237,9 @@ export class ItinerariesModel {
       
       return result.rows.map((itinerary: any) => ({
         ...itinerary,
-        request_data: JSON.parse(itinerary.request_data)
+        request_data: typeof itinerary.request_data === 'string'
+          ? JSON.parse(itinerary.request_data)
+          : itinerary.request_data
       }));
     } catch (error) {
       logger.error('Failed to find itineraries by client IP', {
@@ -256,7 +266,9 @@ export class ItinerariesModel {
       
       return result.rows.map((itinerary: any) => ({
         ...itinerary,
-        request_data: JSON.parse(itinerary.request_data)
+        request_data: typeof itinerary.request_data === 'string'
+          ? JSON.parse(itinerary.request_data)
+          : itinerary.request_data
       }));
     } catch (error) {
       logger.error('Failed to find pending itineraries', {

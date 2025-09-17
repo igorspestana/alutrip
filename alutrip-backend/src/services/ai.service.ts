@@ -58,8 +58,9 @@ export class AIService {
 
         // Return a polite decline response without using AI
         const declineMessage = 
-          'Olá! Eu sou o AluTrip, seu assistente de viagem! Eu estou aqui para ajudar você com tudo que envolve destinos, hospedagens, passeios, restaurantes e dicas de viagem. ' +
-          'Essa pergunta que você fez foge um pouquinho do tema de viagens, mas se quiser, pode me mandar uma dúvida sobre sua próxima aventura que vou adorar ajudar!';
+          'Olá! Eu sou o AluTrip, seu assistente de viagem! Eu estou aqui para ajudar você com tudo que envolve ' +
+          'destinos, hospedagens, passeios, restaurantes e dicas de viagem. Essa pergunta que você fez foge um pouquinho ' +
+          'do tema de viagens, mas se quiser, pode me mandar uma dúvida sobre sua próxima aventura que vou adorar ajudar!';
         
         return {
           content: declineMessage,
@@ -133,6 +134,83 @@ export class AIService {
   }
 
   /**
+   * Process itinerary request using the specified AI model
+   */
+  async processItineraryRequest(
+    prompt: string,
+    model: AIModel,
+    sessionId?: string
+  ): Promise<AIServiceResponse> {
+    const startTime = Date.now();
+    
+    try {
+      logger.info('Starting AI itinerary processing', {
+        context: 'ai',
+        model,
+        promptLength: prompt.length,
+        sessionId
+      });
+      
+      let response: AIServiceResponse;
+      
+      switch (model) {
+      case 'groq':
+        response = await this.processItineraryWithGroq(prompt, sessionId);
+        break;
+      case 'gemini':
+        response = await this.processItineraryWithGemini(prompt, sessionId);
+        break;
+      default:
+        throw new Error(`Unsupported AI model: ${model}`);
+      }
+      
+      const totalTime = Date.now() - startTime;
+      
+      logger.info('AI itinerary processing completed', {
+        context: 'ai',
+        model,
+        processingTime: `${totalTime}ms`,
+        responseLength: response.content.length,
+        sessionId
+      });
+      
+      return {
+        ...response,
+        processing_time_ms: totalTime
+      };
+      
+    } catch (error) {
+      const totalTime = Date.now() - startTime;
+      
+      logger.error('AI itinerary processing failed', {
+        context: 'ai',
+        model,
+        error: (error as Error).message,
+        processingTime: `${totalTime}ms`,
+        sessionId
+      });
+      
+      // Create AI service specific error
+      const aiError = new Error(
+        `Failed to process itinerary with ${model}: ${(error as Error).message}`
+      ) as Error & { provider: string; status?: number; code?: string };
+      aiError.provider = model;
+      
+      // Add specific error codes if available
+      if (axios.isAxiosError(error)) {
+        if (error.response?.status) {
+          aiError.status = error.response.status;
+        }
+        if (error.code) {
+          aiError.code = error.code;
+        }
+      }
+      
+      throw aiError;
+    }
+  }
+
+  /**
    * Process question using Groq (Llama model)
    */
   private async processWithGroq(question: string, sessionId?: string): Promise<AIServiceResponse> {
@@ -181,6 +259,99 @@ export class AIService {
       
     } catch (error) {
       logger.error('Groq processing failed', {
+        context: 'ai',
+        error: (error as Error).message,
+        sessionId
+      });
+      throw error;
+    }
+  }
+
+  /**
+   * Process itinerary request using Groq (Llama model)
+   */
+  private async processItineraryWithGroq(prompt: string, sessionId?: string): Promise<AIServiceResponse> {
+    try {
+      const chatCompletion = await this.groqClient.chat.completions.create({
+        messages: [
+          {
+            role: 'system',
+            content: this.getItinerarySystemPrompt()
+          },
+          {
+            role: 'user',
+            content: prompt
+          }
+        ],
+        model: config.GROQ_MODEL,
+        temperature: 0.8, // Slightly higher creativity for itineraries
+        max_tokens: 2048, // More tokens for detailed itineraries
+        top_p: 1,
+        stream: false,
+        stop: null
+      });
+
+      const response = chatCompletion.choices[0]?.message?.content || '';
+      
+      if (!response.trim()) {
+        throw new Error('Empty response from Groq API');
+      }
+
+      return {
+        content: response.trim(),
+        model_used: 'groq',
+        token_usage: chatCompletion.usage ? {
+          prompt_tokens: chatCompletion.usage.prompt_tokens || 0,
+          completion_tokens: chatCompletion.usage.completion_tokens || 0,
+          total_tokens: chatCompletion.usage.total_tokens || 0
+        } : {
+          prompt_tokens: 0,
+          completion_tokens: 0,
+          total_tokens: 0
+        },
+        processing_time_ms: 0 // Will be set by parent method
+      };
+      
+    } catch (error) {
+      logger.error('Groq itinerary processing failed', {
+        context: 'ai',
+        error: (error as Error).message,
+        sessionId
+      });
+      throw error;
+    }
+  }
+
+  /**
+   * Process itinerary request using Google Gemini
+   */
+  private async processItineraryWithGemini(prompt: string, sessionId?: string): Promise<AIServiceResponse> {
+    try {
+      const model = this.geminiAI.getGenerativeModel({ model: config.GEMINI_MODEL });
+      
+      const fullPrompt = `${this.getItinerarySystemPrompt()}\n\n${prompt}`;
+      
+      const result = await model.generateContent(fullPrompt);
+      const response = await result.response;
+      const text = response.text();
+      
+      if (!text.trim()) {
+        throw new Error('Empty response from Gemini API');
+      }
+
+      return {
+        content: text.trim(),
+        model_used: 'gemini',
+        token_usage: {
+          prompt_tokens: 0, // Gemini doesn't provide token usage details in current SDK
+          completion_tokens: 0,
+          total_tokens: 0
+        },
+        processing_time_ms: 0 // Will be set by parent method
+      };
+      
+    } catch (error) {
+      logger.error('Gemini itinerary processing failed', {
         context: 'ai',
         error: (error as Error).message,
         sessionId
@@ -343,7 +514,9 @@ planejar viagens incríveis sem burocracia ou barreiras.
    - Qualquer assunto que não seja diretamente sobre viagem`;
 
     const refusalMessage = `4. MENSAGEM OBRIGATÓRIA DE RECUSA:
-   "Olá! Eu sou o AluTrip, seu assistente de viagem! Eu estou aqui para ajudar você com tudo que envolve destinos, hospedagens, passeios, restaurantes e dicas de viagem. Essa pergunta que você fez foge um pouquinho do tema de viagens, mas se quiser, pode me mandar uma dúvida sobre sua próxima aventura que vou adorar ajudar!"`;
+   'Olá! Eu sou o AluTrip, seu assistente de viagem! Eu estou aqui para ajudar você com tudo que envolve destinos, hospedagens, ` +
+   `passeios, restaurantes e dicas de viagem. Essa pergunta que você fez foge um pouquinho do tema de viagens, mas se quiser, ` +
+   `pode me mandar uma dúvida sobre sua próxima aventura que vou adorar ajudar!'`;
 
     const validationRules = `5. VALIDAÇÃO OBRIGATÓRIA:
    - Antes de responder, SEMPRE analise se a pergunta é sobre viagem
@@ -367,9 +540,67 @@ Diretrizes para respostas sobre viagem:
 - Mantenha as respostas abrangentes, mas não esmagadoras
 - Use um tom conversacional e acessível
 
-LEMBRE-SE: Sua função é SER UM ASSISTENTE DE VIAGEM. Qualquer pergunta que não seja sobre viagem deve ser recusada imediatamente com a mensagem padrão.`;
+LEMBRE-SE: Sua função é SER UM ASSISTENTE DE VIAGEM. Qualquer pergunta que não seja sobre viagem ` +
+      'deve ser recusada imediatamente com a mensagem padrão.';
 
     return `${basePrompt} ${refusalMessage} ${validationRules}`;
+  }
+
+  /**
+   * Get system prompt specifically for itinerary generation
+   */
+  private getItinerarySystemPrompt(): string {
+    return `Você é o AluTrip, um especialista em planejamento de viagens que cria roteiros detalhados e personalizados.
+
+🎯 SEU PAPEL:
+- Você é um planejador de viagens experiente e especializado
+- Crie roteiros detalhados, práticos e inspiradores
+- Considere sempre o orçamento, preferências e estilo de viagem do usuário
+- Forneça informações precisas e atualizadas sobre destinos
+
+📋 DIRETRIZES PARA ROTEIROS:
+
+1. **ESTRUTURA OBRIGATÓRIA:**
+   - Introdução ao destino
+   - Informações práticas (documentação, moeda, transporte)
+   - Roteiro diário detalhado com horários específicos
+   - Sugestões de hospedagem com diferentes faixas de preço
+   - Orçamento estimado por categoria
+   - Dicas extras e informações práticas
+
+2. **FORMATO DIÁRIO:**
+   - Manhã (9h-12h): Atividade principal
+   - Almoço (12h-14h): Sugestão de restaurante
+   - Tarde (14h-18h): Atividade secundária
+   - Jantar (19h-21h): Sugestão de restaurante
+   - Noite (21h+): Atividade noturna ou descanso
+
+3. **INFORMAÇÕES ESSENCIAIS:**
+   - Nomes específicos de restaurantes, atrações e locais
+   - Preços aproximados em USD
+   - Tempo necessário para cada atividade
+   - Como chegar entre os locais
+   - Horários de funcionamento
+
+4. **PERSONALIZAÇÃO:**
+   - Adapte ao orçamento informado
+   - Considere os interesses específicos
+   - Respeite o estilo de viagem (econômico, intermediário, luxo)
+   - Inclua pelo menos uma atividade gratuita por dia
+
+5. **TOM E ESTILO:**
+   - Use um tom entusiasmado e inspirador
+   - Seja específico e prático
+   - Inclua dicas valiosas de insider
+   - Mantenha o foco na experiência do usuário
+
+🚨 IMPORTANTE:
+- Sempre considere as datas específicas para eventos sazonais
+- Inclua tempo realista para deslocamentos
+- Forneça alternativas para dias de chuva (se aplicável)
+- Mencione aspectos culturais e etiqueta local quando relevante
+
+Seu objetivo é criar um roteiro completo que torne a viagem inesquecível e bem organizada!`;
   }
 
   /**
