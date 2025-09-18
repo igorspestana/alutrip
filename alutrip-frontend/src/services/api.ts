@@ -43,12 +43,22 @@ class ApiClient {
           // Rate limit error - handle both header-based and body-based responses
           const responseData = error.response.data;
           
+          console.log('Rate limit error response:', responseData);
+          
           let rateLimitInfo: RateLimitInfo;
           
-          if (responseData?.data?.resetTime && responseData?.data?.timestamp) {
-            // New backend response format
-            const resetTimeMs = new Date(responseData.data.resetTime).getTime();
-            const remaining = Math.max(0, responseData.data.limit - 1);
+          if (responseData?.data?.resetTime || responseData?.data?.reset_time) {
+            const resetTimeString = responseData.data.resetTime || responseData.data.reset_time;
+            console.log('Reset time from backend:', resetTimeString);
+            console.log('Format detected:', responseData.data.resetTime ? 'camelCase (resetTime)' : 'snake_case (reset_time)');
+            
+            const resetTimeMs = new Date(resetTimeString).getTime();
+            const remaining = Math.max(0, responseData.data.limit - (responseData.data.used || responseData.data.limit));
+            
+            console.log('Parsed reset time (ms):', resetTimeMs);
+            console.log('Reset time as Unix timestamp:', Math.floor(resetTimeMs / 1000));
+            console.log('Current time (ms):', new Date().getTime());
+            console.log('Difference (ms):', resetTimeMs - new Date().getTime());
             
             rateLimitInfo = {
               remaining: remaining,
@@ -57,12 +67,15 @@ class ApiClient {
             };
           } else {
             // Fallback to header-based format
+            console.log('Using header-based rate limit format');
             rateLimitInfo = {
               remaining: parseInt(error.response.headers['x-ratelimit-remaining'] || '0'),
               resetTime: parseInt(error.response.headers['x-ratelimit-reset'] || '0'),
               limit: parseInt(error.response.headers['x-ratelimit-limit'] || '5'),
             };
           }
+          
+          console.log('Final rateLimitInfo:', rateLimitInfo);
           
           const rateLimitError: RateLimitError = {
             error: 'Rate limit exceeded',

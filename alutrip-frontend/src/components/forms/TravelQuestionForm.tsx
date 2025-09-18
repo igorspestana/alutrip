@@ -87,23 +87,23 @@ export function TravelQuestionForm() {
     const diffMs = resetDate.getTime() - now.getTime()
     
     if (diffMs <= 0) {
-      return 'Limite será resetado em breve.'
+      return 'Limite pode ser usado novamente.'
     }
     
-    const diffMinutes = Math.floor(diffMs / (1000 * 60))
-    const diffHours = Math.floor(diffMinutes / 60)
-    const remainingMinutes = diffMinutes % 60
+    const totalMinutes = Math.floor(diffMs / (1000 * 60))
+    const hours = Math.floor(totalMinutes / 60)
+    const minutes = totalMinutes % 60
     
-    if (diffHours > 0) {
-      if (remainingMinutes > 0) {
-        return `Limite será resetado em ${diffHours}h ${remainingMinutes}min.`
+    if (hours > 0) {
+      if (minutes > 0) {
+        return `Limite será resetado em ${hours}h ${minutes}min.`
       } else {
-        return `Limite será resetado em ${diffHours}h.`
+        return `Limite será resetado em ${hours}h.`
       }
-    } else if (diffMinutes > 0) {
-      return `Limite será resetado em ${diffMinutes}min.`
+    } else if (minutes > 0) {
+      return `Limite será resetado em ${minutes}min.`
     } else {
-      return 'Limite será resetado em breve.'
+      return 'Limite será resetado em menos de 1 minuto.'
     }
   }
 

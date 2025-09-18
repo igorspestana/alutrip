@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useForm, Controller } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
@@ -27,7 +27,8 @@ const itinerarySchema = z.object({
   budget: z.number()
     .min(100, 'Orçamento mínimo é $100')
     .max(50000, 'Orçamento máximo é $50,000')
-    .optional(),
+    .optional()
+    .or(z.nan().transform(() => undefined)),
   interests: z.array(z.string()).max(10, 'Máximo de 10 interesses').optional()
 }).refine((data) => {
   if (data.startDate && data.endDate) {
@@ -46,6 +47,7 @@ export function ItineraryForm() {
   const [error, setError] = useState<string | null>(null)
   const [rateLimitInfo, setRateLimitInfo] = useState<RateLimitError['rateLimitInfo'] | null>(null)
   const [processingStatus, setProcessingStatus] = useState<string | null>(null)
+  const [currentTime, setCurrentTime] = useState(new Date())
 
   const {
     register,
@@ -63,6 +65,23 @@ export function ItineraryForm() {
 
   const watchedInterests = watch('interests') || []
 
+  useEffect(() => {
+    if (!rateLimitInfo) return
+
+    const interval = setInterval(() => {
+      const now = new Date()
+      setCurrentTime(now)
+      
+      const resetDate = new Date(rateLimitInfo.resetTime * 1000)
+      if (now.getTime() >= resetDate.getTime()) {
+        setRateLimitInfo(null)
+        setError(null)
+      }
+    }, 1000)
+
+    return () => clearInterval(interval)
+  }, [rateLimitInfo])
+
   const onSubmit = async (data: ItineraryFormData) => {
     setIsLoading(true)
     setError(null)
@@ -71,13 +90,18 @@ export function ItineraryForm() {
     setProcessingStatus('Enviando solicitação...')
 
     try {
-      const result = await apiClient.createItinerary({
+      const itineraryData: any = {
         destination: data.destination,
         start_date: data.startDate.toISOString().split('T')[0],
         end_date: data.endDate.toISOString().split('T')[0],
-        budget: data.budget,
         interests: data.interests
-      })
+      }
+      
+      if (data.budget && !isNaN(data.budget)) {
+        itineraryData.budget = data.budget
+      }
+      
+      const result = await apiClient.createItinerary(itineraryData)
       
       setItinerary(result)
       setProcessingStatus('Roteiro criado com sucesso!')
@@ -172,46 +196,76 @@ export function ItineraryForm() {
     if (!rateLimitInfo) return ''
     
     const resetDate = new Date(rateLimitInfo.resetTime * 1000)
-    const now = new Date()
-    const diffMs = resetDate.getTime() - now.getTime()
+    const diffMs = resetDate.getTime() - currentTime.getTime()
+    
+    console.log('getResetTimeMessage debug:', {
+      resetTime: rateLimitInfo.resetTime,
+      resetDate: resetDate.toISOString(),
+      currentTime: currentTime.toISOString(),
+      diffMs: diffMs,
+      diffSeconds: Math.floor(diffMs / 1000)
+    });
     
     if (diffMs <= 0) {
-      return 'Limite será resetado em breve.'
+      return 'Limite pode ser usado novamente.'
     }
     
-    const diffMinutes = Math.floor(diffMs / (1000 * 60))
-    const diffHours = Math.floor(diffMinutes / 60)
-    const remainingMinutes = diffMinutes % 60
+    const totalSeconds = Math.floor(diffMs / 1000)
+    const hours = Math.floor(totalSeconds / 3600)
+    const minutes = Math.floor((totalSeconds % 3600) / 60)
+    const seconds = totalSeconds % 60
     
-    if (diffHours > 0) {
-      if (remainingMinutes > 0) {
-        return `Limite será resetado em ${diffHours}h ${remainingMinutes}min.`
+    if (hours > 0) {
+      if (minutes > 0) {
+        return `Limite será resetado em ${hours}h ${minutes}min.`
       } else {
-        return `Limite será resetado em ${diffHours}h.`
+        return `Limite será resetado em ${hours}h.`
       }
-    } else if (diffMinutes > 0) {
-      return `Limite será resetado em ${diffMinutes}min.`
+    } else if (minutes > 0) {
+      return `Limite será resetado em ${minutes}min ${seconds}s.`
+    } else if (seconds > 0) {
+      return `Limite será resetado em ${seconds}s.`
     } else {
-      return 'Limite será resetado em breve.'
+      return 'Limite pode ser usado novamente.'
     }
   }
 
   return (
     <div className="space-y-6">
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-        <div className="space-y-2">
-          <Label htmlFor="destination" className="text-brand-normal-text flex items-center gap-2">
-            <MapPin className="h-4 w-4" />
-            Destino
-          </Label>
-          <Input
-            id="destination"
-            placeholder="Ex: Rio de Janeiro, RJ"
-            {...register('destination')}
-          />
-          {errors.destination && (
-            <p className="text-sm text-destructive">{errors.destination.message}</p>
-          )}
+        <div className="grid grid-cols-2 gap-4">
+          <div className="space-y-2">
+            <Label htmlFor="destination" className="text-brand-normal-text flex items-center gap-2">
+              <MapPin className="h-4 w-4" />
+              Destino
+            </Label>
+            <Input
+              id="destination"
+              placeholder="Ex: Rio de Janeiro, RJ"
+              {...register('destination')}
+            />
+            {errors.destination && (
+              <p className="text-sm text-destructive">{errors.destination.message}</p>
+            )}
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="budget" className="text-brand-normal-text flex items-center gap-2">
+              <DollarSign className="h-4 w-4" />
+              Orçamento (USD) - Opcional
+            </Label>
+            <Input
+              id="budget"
+              type="number"
+              min="100"
+              max="50000"
+              placeholder="1000"
+              {...register('budget', { valueAsNumber: true })}
+            />
+            {errors.budget && (
+              <p className="text-sm text-destructive">{errors.budget.message}</p>
+            )}
+          </div>
         </div>
 
         <div className="grid grid-cols-2 gap-4">
@@ -237,7 +291,10 @@ export function ItineraryForm() {
           </div>
 
           <div className="space-y-2">
-            <Label className="text-brand-normal-text">Data de Fim</Label>
+            <Label className="text-brand-normal-text flex items-center gap-2">
+              <Calendar className="h-4 w-4" />
+              Data de Fim
+            </Label>
             <Controller
               name="endDate"
               control={control}
@@ -255,23 +312,6 @@ export function ItineraryForm() {
           </div>
         </div>
 
-        <div className="space-y-2">
-          <Label htmlFor="budget" className="text-brand-normal-text flex items-center gap-2">
-            <DollarSign className="h-4 w-4" />
-            Orçamento (USD) - Opcional
-          </Label>
-          <Input
-            id="budget"
-            type="number"
-            min="100"
-            max="50000"
-            placeholder="1000"
-            {...register('budget', { valueAsNumber: true })}
-          />
-          {errors.budget && (
-            <p className="text-sm text-destructive">{errors.budget.message}</p>
-          )}
-        </div>
 
         <div className="space-y-2">
           <Label className="text-brand-normal-text flex items-center gap-2">
@@ -342,7 +382,6 @@ export function ItineraryForm() {
             {error}
             {rateLimitInfo && (
               <div className="mt-2 text-sm">
-                <p>Tentativas restantes: {rateLimitInfo.remaining}/{rateLimitInfo.limit}</p>
                 <p>{getResetTimeMessage()}</p>
               </div>
             )}
