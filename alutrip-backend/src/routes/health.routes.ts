@@ -3,15 +3,67 @@ import { healthController } from '../controllers/health.controller';
 
 const router = Router();
 
+/**
+ * @swagger
+ * /health:
+ *   get:
+ *     tags:
+ *       - Health
+ *     summary: API health check
+ *     description: Basic health check endpoint to verify the API is running
+ *     responses:
+ *       200:
+ *         description: API is healthy
+ */
 // Basic health check endpoint
 router.get('/', healthController.getHealth);
 
+/**
+ * @swagger
+ * /health/detailed:
+ *   get:
+ *     tags:
+ *       - Health
+ *     summary: Detailed system information
+ *     description: Provides detailed information about the system status, including dependencies and environment
+ *     responses:
+ *       200:
+ *         description: Detailed health information
+ *       500:
+ *         description: Failed to retrieve detailed health information
+ */
 // Detailed health check (for monitoring)
 router.get('/detailed', healthController.getDetailedHealth);
 
+/**
+ * @swagger
+ * /health/ready:
+ *   get:
+ *     tags:
+ *       - Health
+ *     summary: Readiness probe
+ *     description: Indicates whether the application is ready to serve traffic
+ *     responses:
+ *       200:
+ *         description: Application is ready
+ *       503:
+ *         description: Application is not ready
+ */
 // Readiness probe (for Kubernetes)
 router.get('/ready', healthController.getReadiness);
 
+/**
+ * @swagger
+ * /health/live:
+ *   get:
+ *     tags:
+ *       - Health
+ *     summary: Liveness probe
+ *     description: Indicates whether the application is alive
+ *     responses:
+ *       200:
+ *         description: Application is alive
+ */
 // Liveness probe (for Kubernetes)
 router.get('/live', healthController.getLiveness);
 

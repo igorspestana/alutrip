@@ -48,27 +48,6 @@ const router = Router();
  *             maxLength: 50
  *           description: Array of interests
  *           example: ["culture", "food", "temples"]
- *         travel_style:
- *           type: string
- *           enum: [budget, mid-range, luxury]
- *           description: Travel style preference
- *           example: "mid-range"
- *         accommodation_type:
- *           type: string
- *           enum: [hotel, hostel, airbnb, any]
- *           description: Accommodation preference
- *           example: "hotel"
- *         group_size:
- *           type: integer
- *           minimum: 1
- *           maximum: 20
- *           description: Number of travelers
- *           example: 2
- *         special_requirements:
- *           type: string
- *           maxLength: 500
- *           description: Special requirements
- *           example: "Vegetarian friendly restaurants"
  * 
  *     ItineraryResponse:
  *       type: object

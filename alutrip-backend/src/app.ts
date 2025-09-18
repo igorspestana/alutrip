@@ -10,6 +10,8 @@ import { initializeQueue } from './config/queue';
 import { startWorker } from './jobs/worker';
 import { startAutoFallback } from './jobs/auto-fallback.job';
 import { routes } from './routes';
+import swaggerUi from 'swagger-ui-express';
+import { swaggerSpec } from './config/swagger';
 import { errorHandler, notFoundHandler } from './middleware/error-handler';
 
 // Create Express application
@@ -81,6 +83,13 @@ app.use((req, res, next) => {
 
 // Routes
 app.use('/', routes);
+
+// Swagger docs (available without auth; restrict in production if needed)
+app.use('/docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
+app.get('/docs.json', (_req, res) => {
+  res.setHeader('Content-Type', 'application/json');
+  res.send(swaggerSpec);
+});
 
 // 404 handler
 app.use('*', notFoundHandler);
@@ -190,7 +199,7 @@ const startServer = async(): Promise<void> => {
       console.log('📍 AVAILABLE ENDPOINTS:');
       console.log(`   🏥 Health Check: ${baseUrl}/health`);
       console.log(`   🔧 Detailed Health: ${baseUrl}/health/detailed`);
-      console.log(`   📚 API Documentation: ${baseUrl}/docs (coming soon)`);
+      console.log(`   📚 API Documentation: ${baseUrl}/docs`);
       console.log(`   🧳 Travel Q&A: ${baseUrl}/api/travel/ask`);
       console.log(`   📋 Itinerary Planning: ${baseUrl}/api/itinerary/create`);
       console.log('');

@@ -147,11 +147,7 @@ main() {
         "start_date": "2025-06-15",
         "end_date": "2025-06-18",
         "budget": 1500,
-        "interests": ["culture", "food", "art"],
-        "travel_style": "mid-range",
-        "accommodation_type": "hotel",
-        "group_size": 2,
-        "special_requirements": "Need vegetarian restaurant recommendations"
+        "interests": ["culture", "food", "art"]
     }'
     test_api_endpoint "POST" "$ENDPOINT_BASE/create" "$itinerary_data" "200" "Create Valid Itinerary"
     
@@ -227,8 +223,7 @@ main() {
         "start_date": "2025-07-01",
         "end_date": "2025-07-04",
         "budget": 1200,
-        "interests": ["culture", "art"],
-        "travel_style": "mid-range"
+        "interests": ["culture", "art"]
     }'
     test_api_endpoint "POST" "$ENDPOINT_BASE/create-direct" "$direct_data" "200" "Create Direct Processing"
     
@@ -300,8 +295,7 @@ main() {
         "start_date": "2025-08-01",
         "end_date": "2025-08-04",
         "budget": 1000,
-        "interests": ["culture", "food"],
-        "travel_style": "mid-range"
+        "interests": ["culture", "food"]
     }'
     
     # Create itinerary and check processing method
