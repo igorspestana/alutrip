@@ -1,4 +1,3 @@
-// API Response types (real API structure)
 export interface ApiResponse<T> {
   status: string;
   data?: T;
@@ -6,7 +5,6 @@ export interface ApiResponse<T> {
   message?: string;
 }
 
-// Travel Q&A types
 export interface TravelQuestion {
   id: string;
   question: string;
@@ -29,11 +27,10 @@ export interface TravelQuestionResponse {
   created_at: string;
 }
 
-// Itinerary types
 export interface ItineraryRequest {
   destination: string;
-  startDate: string;
-  endDate: string;
+  start_date: string;
+  end_date: string;
   budget?: number;
   interests?: string[];
 }
@@ -41,25 +38,24 @@ export interface ItineraryRequest {
 export interface Itinerary {
   id: string;
   destination: string;
-  startDate: string;
-  endDate: string;
+  start_date: string;
+  end_date: string;
   budget?: number;
   interests?: string[];
   status: 'pending' | 'processing' | 'completed' | 'failed';
-  createdAt: string;
-  pdfUrl?: string;
-  errorMessage?: string;
+  created_at: string;
+  pdf_url?: string;
+  error_message?: string;
 }
 
 export interface ItineraryStatusResponse {
   id: string;
   status: 'pending' | 'processing' | 'completed' | 'failed';
   progress?: number;
-  errorMessage?: string;
-  pdfUrl?: string;
+  error_message?: string;
+  pdf_url?: string;
 }
 
-// Rate limiting types
 export interface RateLimitInfo {
   remaining: number;
   resetTime: number;
@@ -81,7 +77,6 @@ export interface RateLimitError {
   rateLimitInfo: RateLimitInfo;
 }
 
-// Health check types
 export interface HealthCheckResponse {
   status: 'ok' | 'error';
   timestamp: string;

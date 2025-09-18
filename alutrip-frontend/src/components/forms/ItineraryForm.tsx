@@ -73,8 +73,8 @@ export function ItineraryForm() {
     try {
       const result = await apiClient.createItinerary({
         destination: data.destination,
-        startDate: data.startDate.toISOString().split('T')[0],
-        endDate: data.endDate.toISOString().split('T')[0],
+        start_date: data.startDate.toISOString().split('T')[0],
+        end_date: data.endDate.toISOString().split('T')[0],
         budget: data.budget,
         interests: data.interests
       })
@@ -117,11 +117,11 @@ export function ItineraryForm() {
         const status = await apiClient.getItineraryStatus(id)
         
         if (status.status === 'completed') {
-          setItinerary(prev => prev ? { ...prev, status: 'completed', pdfUrl: status.pdfUrl } : null)
+          setItinerary(prev => prev ? { ...prev, status: 'completed', pdf_url: status.pdf_url } : null)
           setProcessingStatus('Roteiro concluído! Clique para baixar o PDF.')
           return
         } else if (status.status === 'failed') {
-          setError(status.errorMessage || 'Falha na geração do roteiro')
+          setError(status.error_message || 'Falha na geração do roteiro')
           setProcessingStatus(null)
           return
         }
@@ -280,26 +280,26 @@ export function ItineraryForm() {
           </Label>
           <div className="grid grid-cols-2 gap-2">
             {INTEREST_OPTIONS.map((interest) => (
-              <div key={interest} className="flex items-center space-x-2">
+              <div key={interest.value} className="flex items-center space-x-2">
                 <Controller
                   name="interests"
                   control={control}
                   render={({ field }) => (
                     <Checkbox
-                      id={interest}
-                      checked={field.value?.includes(interest) || false}
+                      id={interest.value}
+                      checked={field.value?.includes(interest.value) || false}
                       onCheckedChange={(checked) => {
-                        const newInterests = handleInterestChange(interest, checked as boolean)
+                        const newInterests = handleInterestChange(interest.value, checked as boolean)
                         field.onChange(newInterests)
                       }}
                     />
                   )}
                 />
                 <Label 
-                  htmlFor={interest}
+                  htmlFor={interest.value}
                   className="text-sm text-brand-normal-text cursor-pointer"
                 >
-                  {interest}
+                  {interest.label}
                 </Label>
               </div>
             ))}
@@ -356,20 +356,17 @@ export function ItineraryForm() {
             <h3 className="font-heading text-lg font-semibold text-brand-accent-text">
               Roteiro: {itinerary.destination}
             </h3>
-            <span className="text-xs text-brand-normal-text opacity-75">
-              Status: {itinerary.status}
-            </span>
           </div>
           
           <div className="text-sm text-brand-normal-text space-y-1">
-            <p>Período: {new Date(itinerary.startDate).toLocaleDateString('pt-BR')} - {new Date(itinerary.endDate).toLocaleDateString('pt-BR')}</p>
+            <p>Período: {new Date(itinerary.start_date).toLocaleDateString('pt-BR')} - {new Date(itinerary.end_date).toLocaleDateString('pt-BR')}</p>
             {itinerary.budget && <p>Orçamento: ${itinerary.budget}</p>}
             {itinerary.interests && itinerary.interests.length > 0 && (
               <p>Interesses: {itinerary.interests.join(', ')}</p>
             )}
           </div>
 
-          {itinerary.status === 'completed' && itinerary.pdfUrl && (
+          {itinerary.status === 'completed' && itinerary.pdf_url && (
             <Button onClick={handleDownload} className="w-full mt-4">
               <Download className="mr-2 h-4 w-4" />
               Baixar Roteiro PDF
@@ -377,7 +374,7 @@ export function ItineraryForm() {
           )}
           
           <div className="text-xs text-brand-normal-text opacity-75">
-            {new Date(itinerary.createdAt).toLocaleString('pt-BR')}
+            {new Date(itinerary.created_at).toLocaleString('pt-BR')}
           </div>
         </div>
       )}
