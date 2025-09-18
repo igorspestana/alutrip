@@ -26,7 +26,6 @@ export class AppError extends Error {
   }
 }
 
-// Convert Zod errors to validation errors
 const formatZodError = (error: ZodError): ValidationError[] => {
   return error.errors.map((err) => ({
     field: err.path.join('.'),
@@ -35,12 +34,10 @@ const formatZodError = (error: ZodError): ValidationError[] => {
   }));
 };
 
-// Generate unique request ID
 const generateRequestId = (): string => {
   return `req_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 };
 
-// Error handler middleware
 export const errorHandler = (
   error: Error,
   req: Request,
@@ -50,13 +47,11 @@ export const errorHandler = (
   const requestId = generateRequestId();
   const timestamp = new Date().toISOString();
 
-  // Default error response
   let statusCode = HttpStatusCode.INTERNAL_SERVER_ERROR;
   let type = ErrorType.INTERNAL_ERROR;
   let message = 'Internal server error';
   let details: any = {};
 
-  // Handle different error types
   if (error instanceof AppError) {
     statusCode = error.statusCode;
     type = error.type;
@@ -83,7 +78,6 @@ export const errorHandler = (
     message = 'Database operation failed';
   }
 
-  // Log the error
   logger.error('Request error', {
     requestId,
     method: req.method,
@@ -101,7 +95,6 @@ export const errorHandler = (
     params: req.params
   });
 
-  // Create error response
   const errorResponse: ErrorResponse = {
     status: 'error',
     message,
@@ -113,7 +106,6 @@ export const errorHandler = (
     }
   };
 
-  // Don't expose internal errors in production
   if (process.env['NODE_ENV'] === 'production' && statusCode === HttpStatusCode.INTERNAL_SERVER_ERROR) {
     errorResponse.message = 'Internal server error';
     errorResponse.data = {
@@ -123,11 +115,9 @@ export const errorHandler = (
     };
   }
 
-  // Send error response
   res.status(statusCode).json(errorResponse);
 };
 
-// Not found handler
 export const notFoundHandler = (req: Request, res: Response): void => {
   const errorResponse: ErrorResponse = {
     status: 'error',
@@ -149,14 +139,12 @@ export const notFoundHandler = (req: Request, res: Response): void => {
   res.status(HttpStatusCode.NOT_FOUND).json(errorResponse);
 };
 
-// Async error wrapper
 export const asyncHandler = (fn: Function) => {
   return (req: Request, res: Response, next: NextFunction) => {
     Promise.resolve(fn(req, res, next)).catch(next);
   };
 };
 
-// Create specific error types
 export const createValidationError = (message: string, errors?: ValidationError[]) => {
   return new AppError(
     message,

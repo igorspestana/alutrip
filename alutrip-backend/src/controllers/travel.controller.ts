@@ -20,11 +20,9 @@ export class TravelController {
     const clientIp = req.ip || 'unknown';
     
     try {
-      // Validate request body
       const validatedData = travelQuestionSchema.parse(req.body);
       const { question, model } = validatedData;
 
-      // Validate model availability
       if (!travelService.validateModel(model)) {
         const response: ErrorResponse = {
           status: 'error',
@@ -37,10 +35,8 @@ export class TravelController {
         return;
       }
 
-      // Generate session ID if not provided (for future chat support)
       const sessionId = req.headers['x-session-id'] as string || undefined;
 
-      // Process the question
       const result = await travelService.askQuestion(
         { question, model },
         clientIp,
@@ -49,14 +45,12 @@ export class TravelController {
 
       const processingTime = Date.now() - startTime;
 
-      // Success response
       const response: ApiResponse<TravelQuestionResponse> = {
         status: 'success',
         message: 'Travel question answered successfully',
         data: result
       };
 
-      // Add processing time header
       res.set('X-Processing-Time', `${processingTime}ms`);
       
       res.status(200).json(response);
@@ -89,7 +83,6 @@ export class TravelController {
         return;
       }
 
-      // Rate limiting error
       if ((error as Error).message.includes('Rate limit exceeded')) {
         const response: ErrorResponse = {
           status: 'error',
@@ -107,7 +100,6 @@ export class TravelController {
         return;
       }
 
-      // AI Service error
       if ((error as Error).message.includes('AI service error')) {
         const response: ErrorResponse = {
           status: 'error',
@@ -121,7 +113,6 @@ export class TravelController {
         return;
       }
 
-      // Generic server error
       const response: ErrorResponse = {
         status: 'error',
         message: 'Internal server error',
@@ -147,7 +138,6 @@ export class TravelController {
    */
   async getQuestion(req: Request, res: Response): Promise<void> {
     try {
-      // Validate request parameters
       const validatedParams = idParamSchema.parse(req.params);
       const { id } = validatedParams;
 
@@ -214,7 +204,6 @@ export class TravelController {
    */
   async getRecentQuestions(req: Request, res: Response): Promise<void> {
     try {
-      // Validate query parameters
       const validatedQuery = paginationSchema.parse(req.query);
       const { limit, offset } = validatedQuery;
 
@@ -356,7 +345,6 @@ export class TravelController {
     const clientIp = req.ip || 'unknown';
     
     try {
-      // Validate query parameters
       const validatedQuery = paginationSchema.parse(req.query);
       const { limit, offset } = validatedQuery;
 
@@ -414,5 +402,4 @@ export class TravelController {
   }
 }
 
-// Export singleton instance
 export const travelController = new TravelController();

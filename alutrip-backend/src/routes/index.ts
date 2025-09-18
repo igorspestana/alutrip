@@ -6,14 +6,11 @@ import { debugRoutes } from './debug.routes';
 
 const router = Router();
 
-// Health check routes
 router.use('/health', healthRoutes);
 
-// API routes
 router.use('/api/travel', travelRoutes);
 router.use('/api/itinerary', itineraryRoutes);
 
-// Debug routes (development only)
 router.use('/debug', debugRoutes);
 
 // Future API routes (to be added in future phases)

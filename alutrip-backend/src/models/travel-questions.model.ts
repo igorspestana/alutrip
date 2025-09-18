@@ -3,7 +3,6 @@ import { logger } from '../config/logger';
 import { TravelQuestion, AIModel } from '../types/travel';
 
 export class TravelQuestionsModel {
-  // Create a new travel question
   static async create(
     clientIp: string,
     question: string,
@@ -40,7 +39,6 @@ export class TravelQuestionsModel {
     }
   }
 
-  // Get a travel question by ID
   static async findById(id: number): Promise<TravelQuestion | null> {
     const sql = `
       SELECT * FROM travel_questions 
@@ -59,7 +57,6 @@ export class TravelQuestionsModel {
     }
   }
 
-  // Get recent travel questions with pagination
   static async findRecent(
     limit: number = 10,
     offset: number = 0
@@ -91,7 +88,6 @@ export class TravelQuestionsModel {
     }
   }
 
-  // Get questions by client IP (for analytics)
   static async findByClientIp(
     clientIp: string,
     limit: number = 10,
@@ -118,7 +114,6 @@ export class TravelQuestionsModel {
     }
   }
 
-  // Get questions by session ID (for future chat support)
   static async findBySessionId(sessionId: string): Promise<TravelQuestion[]> {
     const sql = `
       SELECT * FROM travel_questions 
@@ -138,7 +133,6 @@ export class TravelQuestionsModel {
     }
   }
 
-  // Get statistics
   static async getStats(): Promise<{
     total: number;
     today: number;
@@ -176,7 +170,6 @@ export class TravelQuestionsModel {
     }
   }
 
-  // Delete old questions (for cleanup - older than specified days)
   static async deleteOlderThan(days: number): Promise<number> {
     const sql = `
       DELETE FROM travel_questions 

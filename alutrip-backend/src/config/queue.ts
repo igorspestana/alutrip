@@ -8,7 +8,6 @@ import { logger } from './logger';
  * Uses BullMQ with Redis for reliable job queue management
  */
 
-// Create Redis connection for BullMQ
 const redisUrl = config.REDIS_QUEUE_URL || config.REDIS_URL;
 const redisOptions = {
   host: redisUrl.includes('://') 
@@ -17,31 +16,28 @@ const redisOptions = {
   port: redisUrl.includes('://') 
     ? parseInt(new URL(redisUrl).port || '6379') || 6379
     : parseInt(redisUrl.split(':')[1] || '6379') || 6379,
-  maxRetriesPerRequest: null, // Required for BullMQ
+  maxRetriesPerRequest: null,
   retryDelayOnFailover: 100,
   connectTimeout: 30000,
-  commandTimeout: 30000, // Increased for BullMQ operations
+  commandTimeout: 30000,
 };
 
-// Create BullMQ queue for itinerary processing
 export const itineraryQueue = new Queue('itinerary_processing', {
   connection: redisOptions,
   defaultJobOptions: {
-    removeOnComplete: 10, // Keep last 10 completed jobs
-    removeOnFail: 5, // Keep last 5 failed jobs
+    removeOnComplete: 10,
+    removeOnFail: 5,
     attempts: config.QUEUE_MAX_ATTEMPTS,
     backoff: {
       type: 'exponential',
-      delay: 5000, // Start with 5 second delay
+      delay: 5000,
     },
-    delay: 1000, // 1 second delay before processing
+    delay: 1000,
   },
 });
 
-// BullMQ Worker instance (will be created in worker.ts)
 export let itineraryWorker: Worker | null = null;
 
-// Queue event listeners for monitoring and logging
 itineraryQueue.on('error', (error: Error) => {
   logger.error('Itinerary queue error', { 
     context: 'queue', 
@@ -56,7 +52,6 @@ export const initializeQueue = async (): Promise<void> => {
   try {
     logger.info('Initializing BullMQ queue system', { context: 'queue' });
 
-    // Test Redis connection
     const testRedis = new Redis(redisOptions);
     await testRedis.ping();
     await testRedis.quit();
@@ -101,8 +96,8 @@ export const addItineraryJob = async (itineraryId: number): Promise<void> => {
       'process-itinerary',
       { itineraryId },
       {
-        priority: 1, // Normal priority
-        delay: 0, // No delay - process immediately
+        priority: 1,
+        delay: 0,
       }
     );
 
@@ -196,13 +191,10 @@ export const cleanStalledJobs = async (): Promise<{
   try {
     logger.info('Starting cleanup of stuck/stalled jobs', { context: 'queue' });
 
-    // Clean stalled jobs (older than 5 minutes) 
     const stalledCleaned = await itineraryQueue.clean(5 * 60 * 1000, 0, 'failed');
     
-    // Clean old waiting jobs (older than 30 minutes)
     const waitingCleaned = await itineraryQueue.clean(30 * 60 * 1000, 0, 'waiting');
     
-    // Clean active jobs that are too old (older than 60 minutes)
     const activeCleaned = await itineraryQueue.clean(60 * 60 * 1000, 0, 'active');
 
     const result = {
@@ -312,7 +304,7 @@ export const getDetailedQueueInfo = async (): Promise<{
         processedOn: job.processedOn,
         attemptsMade: job.attemptsMade
       })),
-      completedJobs: completed.slice(0, 5).map(job => ({ // Only last 5 to avoid too much data
+      completedJobs: completed.slice(0, 5).map(job => ({
         id: job.id,
         data: job.data,
         finishedOn: job.finishedOn,
@@ -350,12 +342,10 @@ export const queueHealthCheck = async (): Promise<{
   stats?: any;
 }> => {
   try {
-    // Test Redis connection
     const testRedis = new Redis(redisOptions);
     await testRedis.ping();
     await testRedis.quit();
 
-    // Get queue stats
     const stats = await getQueueStats();
 
     return {

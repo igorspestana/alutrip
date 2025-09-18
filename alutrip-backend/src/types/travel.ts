@@ -1,7 +1,5 @@
-// AI Models
 export type AIModel = 'groq' | 'gemini';
 
-// Travel question types
 export interface TravelQuestion {
   id: number;
   session_id?: string;
@@ -25,7 +23,6 @@ export interface TravelQuestionResponse {
   created_at: string;
 }
 
-// Itinerary types
 export type ProcessingStatus = 'pending' | 'processing' | 'completed' | 'failed';
 
 export interface Itinerary {
@@ -77,7 +74,6 @@ export interface ItineraryStatus {
   pdf_filename?: string;
 }
 
-// Rate limiting types
 export interface RateLimit {
   id: number;
   client_ip: string;
@@ -123,7 +119,6 @@ export interface Message {
   created_at: Date;
 }
 
-// AI Service types
 export interface AIServiceResponse {
   content: string;
   model_used: AIModel;
@@ -141,7 +136,6 @@ export interface AIServiceError extends Error {
   status?: number;
 }
 
-// PDF Generation types
 export interface PDFGenerationOptions {
   template?: string;
   format?: 'A4' | 'Letter';

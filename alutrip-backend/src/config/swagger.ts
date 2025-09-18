@@ -54,5 +54,3 @@ const options: OAS3Options = {
 };
 
 export const swaggerSpec = swaggerJSDoc(options);
-
-

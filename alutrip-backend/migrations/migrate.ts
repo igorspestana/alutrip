@@ -16,7 +16,6 @@ class MigrationRunner {
     this.migrationsDir = path.join(__dirname);
   }
 
-  // Create migrations table if it doesn't exist
   private async createMigrationsTable(): Promise<void> {
     const sql = `
       CREATE TABLE IF NOT EXISTS migrations (
@@ -30,7 +29,6 @@ class MigrationRunner {
     logger.info('Migrations table created or already exists');
   }
 
-  // Get executed migrations from database
   private async getExecutedMigrations(): Promise<number[]> {
     const sql = 'SELECT id FROM migrations ORDER BY id';
     const result = await query(sql);
@@ -39,7 +37,6 @@ class MigrationRunner {
     return rows.map(row => row.id);
   }
 
-  // Get all migration files
   private getMigrationFiles(): Migration[] {
     const files = fs.readdirSync(this.migrationsDir)
       .filter(file => file.endsWith('.sql'))
@@ -57,15 +54,12 @@ class MigrationRunner {
     });
   }
 
-  // Execute a single migration
   private async executeMigration(migration: Migration): Promise<void> {
     try {
       logger.info(`Executing migration: ${migration.filename}`);
       
-      // Execute the migration SQL
       await query(migration.content);
       
-      // Record the migration as executed
       await query(
         'INSERT INTO migrations (id, filename) VALUES ($1, $2)',
         [migration.id, migration.filename]
@@ -80,24 +74,18 @@ class MigrationRunner {
     }
   }
 
-  // Run all pending migrations
   async runMigrations(): Promise<void> {
     try {
       logger.info('Starting database migrations');
       
-      // Initialize database connection
       await initializeDatabase();
       
-      // Create migrations table
       await this.createMigrationsTable();
       
-      // Get executed migrations
       const executedMigrations = await this.getExecutedMigrations();
       
-      // Get all migration files
       const allMigrations = this.getMigrationFiles();
       
-      // Filter pending migrations
       const pendingMigrations = allMigrations.filter(
         migration => !executedMigrations.includes(migration.id)
       );
@@ -109,7 +97,6 @@ class MigrationRunner {
       
       logger.info(`Found ${pendingMigrations.length} pending migrations`);
       
-      // Execute pending migrations
       for (const migration of pendingMigrations) {
         await this.executeMigration(migration);
       }
@@ -124,7 +111,6 @@ class MigrationRunner {
     }
   }
 
-  // Rollback last migration (for development)
   async rollbackLastMigration(): Promise<void> {
     try {
       logger.info('Rolling back last migration');
@@ -140,7 +126,6 @@ class MigrationRunner {
       
       const lastMigration = lastMigrationResult.rows[0];
       
-      // Remove migration record
       await query('DELETE FROM migrations WHERE id = $1', [lastMigration.id]);
       
       logger.warn(`Rolled back migration: ${lastMigration.filename}`, {
@@ -156,7 +141,6 @@ class MigrationRunner {
     }
   }
 
-  // Get migration status
   async getMigrationStatus(): Promise<void> {
     try {
       await this.createMigrationsTable();
@@ -186,7 +170,6 @@ class MigrationRunner {
   }
 }
 
-// CLI interface
 const runner = new MigrationRunner();
 const command: string = process.argv[2] ?? 'status';
 
@@ -230,7 +213,6 @@ async function main() {
   }
 }
 
-// Run if called directly
 if (require.main === module) {
   main();
 }

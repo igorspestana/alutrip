@@ -535,6 +535,5 @@ export class PDFService {
   }
 }
 
-// Export singleton instance
 export const pdfService = PDFService;
 

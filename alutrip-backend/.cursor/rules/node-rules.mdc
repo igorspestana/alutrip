@@ -235,8 +235,6 @@ app.listen(PORT, () => {
   console.log(`   🏥 Health Check: ${baseUrl}/health`);
   console.log(`   📚 API Documentation: ${baseUrl}/docs`);
   console.log(`   🔧 API Base: ${baseUrl}/api`);
-  console.log(`   🧳 Travel Q&A: ${baseUrl}/api/travel/ask`);
-  console.log(`   📋 Itinerary Planning: ${baseUrl}/api/itinerary/create`);
   console.log('');
   console.log('🛡️  SECURITY SETTINGS:');
   console.log(`   🌐 CORS Origin: ${config.cors.origin}`);

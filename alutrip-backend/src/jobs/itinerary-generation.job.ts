@@ -28,7 +28,6 @@ export const processItineraryJob = async (job: Job<ItineraryJobData>): Promise<v
       jobOpts: job.opts
     });
 
-    // Update job progress
     await job.updateProgress(10);
     logger.info('BullMQ job progress updated to 10%', {
       context: 'job',
@@ -36,7 +35,6 @@ export const processItineraryJob = async (job: Job<ItineraryJobData>): Promise<v
       itineraryId
     });
 
-    // Process the itinerary (this will handle AI generation and PDF creation)
     logger.info('Starting itinerary service processing', {
       context: 'job',
       jobId: job.id,
@@ -51,7 +49,6 @@ export const processItineraryJob = async (job: Job<ItineraryJobData>): Promise<v
       itineraryId
     });
 
-    // Update job progress
     await job.updateProgress(100);
     logger.info('BullMQ job progress updated to 100%', {
       context: 'job',
@@ -79,7 +76,6 @@ export const processItineraryJob = async (job: Job<ItineraryJobData>): Promise<v
       processingTime: `${processingTime}ms`
     });
 
-    // Re-throw error to mark job as failed
     throw error;
   }
 };
@@ -88,8 +84,5 @@ export const processItineraryJob = async (job: Job<ItineraryJobData>): Promise<v
  * Job event handlers
  */
 export const setupJobHandlers = () => {
-  // These handlers are set up in the queue configuration
-  // This function is available if additional job-specific handlers are needed
-  
   logger.info('Itinerary job handlers configured', { context: 'job' });
 };

@@ -37,14 +37,11 @@ export class ItineraryController {
         body: req.body
       });
 
-      // Validate request body
       const validatedData: ItineraryRequestInput = itineraryRequestSchema.parse(req.body);
 
-      // Check rate limiting
       const key = `rate_limit:itineraries:${clientIp}`;
-      const rateLimitInfo = await getRateLimitInfo(key, 86400000, 5); // 24h window, 5 requests
+      const rateLimitInfo = await getRateLimitInfo(key, 86400000, 5);
       
-      // Increment rate limit counter
       await incrementRateLimit(key, 86400000);
       
       if (rateLimitInfo.used >= rateLimitInfo.limit) {
@@ -61,23 +58,19 @@ export class ItineraryController {
         return;
       }
 
-      // Validate dates
       itineraryService.validateItineraryDates(validatedData.start_date, validatedData.end_date);
 
-      // Create itinerary record
       const itinerary = await itineraryService.createItinerary(
         clientIp,
         validatedData as any,
         undefined // sessionId
       );
 
-      // Hybrid processing: Try Bull queue first, fallback to direct processing
       const itineraryId = itinerary['id'] as number;
       let processingMethod = 'unknown';
       let processingError = null;
       
       try {
-        // Attempt to add job to Bull queue
         logger.info('Attempting to add itinerary job to Bull queue', {
           context: 'hybrid-controller',
           itineraryId,
@@ -96,7 +89,6 @@ export class ItineraryController {
         });
         
       } catch (queueError) {
-        // Queue failed, fallback to direct processing
         processingError = queueError as Error;
         processingMethod = 'direct';
         
@@ -108,7 +100,6 @@ export class ItineraryController {
           fallback: processingMethod
         });
         
-        // Start direct processing in background (fire-and-forget)
         setImmediate(async () => {
           try {
             logger.info('🔄 Starting direct background processing', {
@@ -143,7 +134,6 @@ export class ItineraryController {
         });
       }
 
-      // Get estimated completion time
       const estimatedCompletion = itineraryService.getEstimatedCompletionTime();
 
       res.status(200).json({
@@ -220,7 +210,6 @@ export class ItineraryController {
         return;
       }
 
-      // Check if PDF is available
       const pdfAvailable = await itineraryService.isPDFAvailable(itinerary);
 
       res.status(200).json({
@@ -299,7 +288,6 @@ export class ItineraryController {
         return;
       }
 
-      // Check if PDF file exists
       const pdfExists = await pdfService.pdfExists(itinerary.pdf_path);
       
       if (!pdfExists) {
@@ -311,10 +299,8 @@ export class ItineraryController {
         return;
       }
 
-      // Get PDF file size
       const fileSize = await pdfService.getPDFSize(itinerary.pdf_path);
 
-      // Set response headers for PDF download
       res.setHeader('Content-Type', 'application/pdf');
       res.setHeader('Content-Disposition', `attachment; filename="${itinerary.pdf_filename}"`);
       res.setHeader('Content-Length', fileSize);
@@ -322,7 +308,6 @@ export class ItineraryController {
       res.setHeader('Pragma', 'no-cache');
       res.setHeader('Expires', '0');
 
-      // Stream PDF file to response
       const fileStream = createReadStream(itinerary.pdf_path);
       
       fileStream.on('error', (streamError) => {
@@ -389,7 +374,6 @@ export class ItineraryController {
         statusFilter.status
       );
 
-      // Add PDF availability information
       const itinerariesWithPDFInfo = await Promise.all(
         result.itineraries.map(async (itinerary) => ({
           id: itinerary['id'],
@@ -484,7 +468,6 @@ export class ItineraryController {
         pagination.offset
       );
 
-      // Add PDF availability information
       const itinerariesWithPDFInfo = await Promise.all(
         itineraries.map(async (itinerary) => ({
           id: itinerary['id'],
@@ -552,10 +535,8 @@ export class ItineraryController {
         clientIp: req.ip || 'unknown'
       });
 
-      // Find itineraries that are pending for more than 30 seconds (for testing)
       const thirtySecondsAgo = new Date(Date.now() - 30 * 1000);
       
-      // Get all pending itineraries
       const pendingItineraries = await itineraryService.getPendingItineraries(10);
       
       logger.info('🔍 DEBUG: Checking pending itineraries', {
@@ -565,13 +546,7 @@ export class ItineraryController {
         thresholdTime: thirtySecondsAgo.toISOString()
       });
 
-      // TEMPORARY FIX: Process ALL pending itineraries to resolve timezone issue
-      logger.warn('⚠️ Processing ALL pending itineraries due to timezone issue', {
-        context: 'stuck-processor',
-        pendingCount: pendingItineraries.length
-      });
-      
-      const stuckItineraries = pendingItineraries; // Process ALL pending itineraries
+      const stuckItineraries = pendingItineraries;
 
       if (stuckItineraries.length === 0) {
         res.status(200).json({
@@ -592,7 +567,6 @@ export class ItineraryController {
         stuckIds: stuckItineraries.map(i => i.id)
       });
 
-      // Process stuck itineraries directly (in background)
       const processedIds: number[] = [];
       
       stuckItineraries.forEach(itinerary => {
@@ -668,20 +642,16 @@ export class ItineraryController {
         testMode: 'direct-fallback'
       });
 
-      // Validate request body
       const validatedData: ItineraryRequestInput = itineraryRequestSchema.parse(req.body);
 
-      // Validate dates
       itineraryService.validateItineraryDates(validatedData.start_date, validatedData.end_date);
 
-      // Create itinerary record
       const itinerary = await itineraryService.createItinerary(
         clientIp,
         validatedData as any,
         undefined // sessionId
       );
 
-      // FORCE DIRECT PROCESSING (skip Bull queue entirely)
       const itineraryId = itinerary['id'] as number;
       
       logger.info('🔄 FORCING direct processing (test endpoint)', {
@@ -691,7 +661,6 @@ export class ItineraryController {
         method: 'direct-forced'
       });
 
-      // Start direct processing in background
       setImmediate(async () => {
         try {
           logger.info('🚀 Starting FORCED direct background processing', {
@@ -718,7 +687,6 @@ export class ItineraryController {
         }
       });
 
-      // Get estimated completion time
       const estimatedCompletion = itineraryService.getEstimatedCompletionTime();
 
       res.status(200).json({

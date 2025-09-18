@@ -7,15 +7,11 @@ import { SuccessResponse, ErrorResponse, HttpStatusCode, HealthCheckResponse } f
 import { asyncHandler } from '../middleware/error-handler';
 
 class HealthController {
-  // Basic health check
   getHealth = asyncHandler(async(_req: Request, res: Response): Promise<void> => {
     const startTime = Date.now();
     
     try {
-      // Check database health
       const isDatabaseHealthy = await checkDatabaseHealth();
-      
-      // Check Redis health
       const isRedisHealthy = await checkRedisHealth();
       
       // Check AI services (basic connectivity - not actual API calls)
@@ -38,13 +34,11 @@ class HealthController {
         }
       };
       
-      // Determine overall health status
       const isHealthy = isDatabaseHealthy && isRedisHealthy;
       const statusCode = isHealthy ? HttpStatusCode.OK : HttpStatusCode.SERVICE_UNAVAILABLE;
       const status = isHealthy ? 'success' : 'error';
       const message = isHealthy ? 'API is healthy' : 'API health check failed';
       
-      // Log health check
       logger.info('Health check performed', {
         healthy: isHealthy,
         responseTime: `${responseTime}ms`,
@@ -82,15 +76,12 @@ class HealthController {
     }
   });
   
-  // Detailed health check (for monitoring systems)
   getDetailedHealth = asyncHandler(async(_req: Request, res: Response): Promise<void> => {
     const startTime = Date.now();
     
     try {
-      // Collect detailed system information
       const memoryUsage = process.memoryUsage();
       
-      // Check all dependencies
       const [isDatabaseHealthy, isRedisHealthy] = await Promise.all([
         checkDatabaseHealth().catch(() => false),
         checkRedisHealth().catch(() => false)
@@ -102,15 +93,13 @@ class HealthController {
         environment: config.NODE_ENV,
         uptime: Math.floor(process.uptime()),
         
-        // System resources
         memory: {
-          rss: Math.round(memoryUsage.rss / 1024 / 1024), // MB
-          heapTotal: Math.round(memoryUsage.heapTotal / 1024 / 1024), // MB
-          heapUsed: Math.round(memoryUsage.heapUsed / 1024 / 1024), // MB
-          external: Math.round(memoryUsage.external / 1024 / 1024) // MB
+          rss: Math.round(memoryUsage.rss / 1024 / 1024),
+          heapTotal: Math.round(memoryUsage.heapTotal / 1024 / 1024),
+          heapUsed: Math.round(memoryUsage.heapUsed / 1024 / 1024),
+          external: Math.round(memoryUsage.external / 1024 / 1024)
         },
         
-        // Dependencies status
         dependencies: {
           database: {
             healthy: isDatabaseHealthy,
@@ -134,7 +123,6 @@ class HealthController {
           }
         },
         
-        // Configuration
         config: {
           rate_limit: {
             requests: config.RATE_LIMIT_REQUESTS,
@@ -192,10 +180,8 @@ class HealthController {
     }
   });
   
-  // Readiness probe (for Kubernetes)
   getReadiness = asyncHandler(async(_req: Request, res: Response): Promise<void> => {
     try {
-      // Check if app is ready to serve requests
       const isDatabaseHealthy = await checkDatabaseHealth();
       const isRedisHealthy = await checkRedisHealth();
       
@@ -225,9 +211,7 @@ class HealthController {
     }
   });
   
-  // Liveness probe (for Kubernetes)
   getLiveness = asyncHandler(async(_req: Request, res: Response): Promise<void> => {
-    // Simple liveness check - just return OK if process is running
     res.status(HttpStatusCode.OK).json({
       status: 'success',
       message: 'Application is alive',
