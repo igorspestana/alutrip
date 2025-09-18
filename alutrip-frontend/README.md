@@ -42,14 +42,16 @@ npm run dev
 
 ```bash
 # Start with Docker Compose
-cd docker
-docker-compose up -d
+npm run dc:up
 
 # View logs
-docker-compose logs -f alutrip-frontend
+npm run dc:logs
+
+# Check status
+npm run dc:ps
 
 # Stop services
-docker-compose down
+npm run dc:down
 ```
 
 ### Production Build
@@ -71,6 +73,19 @@ npm run preview
 - `npm run lint:fix` - Fix ESLint errors
 - `npm run format` - Format code with Prettier
 - `npm run type-check` - Run TypeScript type checking
+
+## Docker Commands
+
+```bash
+# Development environment
+npm run dc:up        # Start frontend container
+npm run dc:logs      # View container logs  
+npm run dc:ps        # List running services
+npm run dc:down      # Stop services
+
+# The frontend will be available at http://localhost:5173
+# Hot reload is enabled for development
+```
 
 ## Environment Variables
 
