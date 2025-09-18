@@ -230,7 +230,7 @@ export class AIService {
         ],
         model: config.GROQ_MODEL,
         temperature: 0.7,
-        max_tokens: 1024,
+        max_tokens: 2048,
         top_p: 1,
         stream: false,
         stop: null
@@ -285,7 +285,7 @@ export class AIService {
         ],
         model: config.GROQ_MODEL,
         temperature: 0.8, // Slightly higher creativity for itineraries
-        max_tokens: 2048, // More tokens for detailed itineraries
+        max_tokens: 8192,
         top_p: 1,
         stream: false,
         stop: null
@@ -327,7 +327,12 @@ export class AIService {
    */
   private async processItineraryWithGemini(prompt: string, sessionId?: string): Promise<AIServiceResponse> {
     try {
-      const model = this.geminiAI.getGenerativeModel({ model: config.GEMINI_MODEL });
+      const model = this.geminiAI.getGenerativeModel({ 
+        model: config.GEMINI_MODEL,
+        generationConfig: {
+          maxOutputTokens: 8192,
+        }
+      });
       
       const fullPrompt = `${this.getItinerarySystemPrompt()}\n\n${prompt}`;
       
@@ -365,7 +370,12 @@ export class AIService {
    */
   private async processWithGemini(question: string, sessionId?: string): Promise<AIServiceResponse> {
     try {
-      const model = this.geminiAI.getGenerativeModel({ model: config.GEMINI_MODEL });
+      const model = this.geminiAI.getGenerativeModel({ 
+        model: config.GEMINI_MODEL,
+        generationConfig: {
+          maxOutputTokens: 2048,
+        }
+      });
       
       const prompt = `${this.getSystemPrompt()}\n\nUser Question: ${this.buildTravelPrompt(question)}`;
       

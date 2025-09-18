@@ -173,9 +173,6 @@ export class ItineraryService {
    * Build comprehensive prompt for itinerary generation
    */
   private static buildItineraryPrompt(itinerary: Itinerary): string {
-    const requestData = typeof itinerary.request_data === 'string' 
-      ? JSON.parse(itinerary.request_data)
-      : itinerary.request_data;
 
     // Calculate trip duration
     const startDate = new Date(itinerary.start_date);
@@ -205,35 +202,8 @@ Por favor, crie um roteiro detalhado de viagem com as seguintes informações:
       prompt += `\n- Orçamento: $${itinerary.budget.toLocaleString()} USD`;
     }
 
-    if (requestData.group_size) {
-      prompt += `\n- Número de pessoas: ${requestData.group_size} pessoa${requestData.group_size > 1 ? 's' : ''}`;
-    }
-
-    if (requestData.travel_style) {
-      const styles: Record<string, string> = {
-        'budget': 'Econômico (priorizar opções mais baratas)',
-        'mid-range': 'Intermediário (equilíbrio entre custo e conforto)',
-        'luxury': 'Luxo (priorizar experiências premium)'
-      };
-      prompt += `\n- Estilo de viagem: ${styles[requestData.travel_style]}`;
-    }
-
-    if (requestData.accommodation_type) {
-      const types: Record<string, string> = {
-        'hotel': 'Hotel',
-        'hostel': 'Hostel/Albergue',
-        'airbnb': 'Airbnb/Casa alugada',
-        'any': 'Qualquer tipo de hospedagem'
-      };
-      prompt += `\n- Tipo de hospedagem preferida: ${types[requestData.accommodation_type]}`;
-    }
-
     if (itinerary.interests && itinerary.interests.length > 0) {
       prompt += `\n- Interesses específicos: ${itinerary.interests.join(', ')}`;
-    }
-
-    if (requestData.special_requirements) {
-      prompt += `\n- Requisitos especiais: ${requestData.special_requirements}`;
     }
 
     prompt += `
@@ -285,7 +255,7 @@ Por favor, crie um roteiro detalhado de viagem com as seguintes informações:
 🚨 IMPORTANTE:
 - O roteiro deve ser detalhado e prático
 - Considere tempo de deslocamento entre atividades
-- Adapte as sugestões ao orçamento e estilo de viagem informados
+- Adapte as sugestões ao orçamento informado
 - Inclua pelo menos uma atividade gratuita por dia
 - Considere as datas específicas para eventos sazonais
 
@@ -438,12 +408,12 @@ Crie um roteiro completo e inspirador que torne esta viagem inesquecível!`;
       throw new Error('End date must be after start date');
     }
 
-    // Check maximum trip duration (14 days)
+    // Check maximum trip duration (7 days)
     const diffTime = Math.abs(end.getTime() - start.getTime());
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
     
-    if (diffDays > 14) {
-      throw new Error('Trip duration cannot exceed 14 days');
+    if (diffDays > 7) {
+      throw new Error('Trip duration cannot exceed 7 days');
     }
   }
 

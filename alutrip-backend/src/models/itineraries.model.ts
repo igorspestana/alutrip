@@ -179,22 +179,22 @@ export class ItinerariesModel {
     offset: number = 0,
     status?: ProcessingStatus
   ): Promise<{ itineraries: Itinerary[]; total: number }> {
-    const whereClause = status ? 'WHERE processing_status = $3' : '';
-    const params = status ? [limit, offset, status] : [limit, offset];
+    const whereClause = status ? 'WHERE processing_status = $1' : '';
+    const dataParams = status ? [status, limit, offset] : [limit, offset];
+    const countParams = status ? [status] : [];
     
     const countSql = `SELECT COUNT(*) FROM itineraries ${whereClause}`;
     const dataSql = `
       SELECT * FROM itineraries 
       ${whereClause}
       ORDER BY created_at DESC 
-      LIMIT $1 OFFSET $2
+      LIMIT ${status ? '$2' : '$1'} OFFSET ${status ? '$3' : '$2'}
     `;
     
     try {
-      const countParams = status ? [status] : [];
       const [countResult, dataResult] = await Promise.all([
         query(countSql, countParams),
-        query(dataSql, params)
+        query(dataSql, dataParams)
       ]);
       
       const itineraries = dataResult.rows.map((itinerary: any) => ({

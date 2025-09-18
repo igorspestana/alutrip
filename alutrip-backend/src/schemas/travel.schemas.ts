@@ -54,30 +54,6 @@ export const itineraryRequestSchema = z.object({
         )
     )
     .max(10, 'Maximum 10 interests allowed')
-    .optional(),
-  travel_style: z
-    .enum(['budget', 'mid-range', 'luxury'], {
-      errorMap: () => ({ message: "Travel style must be 'budget', 'mid-range', or 'luxury'" })
-    })
-    .optional(),
-  accommodation_type: z
-    .enum(['hotel', 'hostel', 'airbnb', 'any'], {
-      errorMap: () => ({ message: "Accommodation type must be 'hotel', 'hostel', 'airbnb', or 'any'" })
-    })
-    .optional(),
-  group_size: z
-    .number()
-    .int('Group size must be a whole number')
-    .min(1, 'Group size must be at least 1')
-    .max(20, 'Group size must be less than 20')
-    .optional(),
-  special_requirements: z
-    .string()
-    .max(500, 'Special requirements must be less than 500 characters')
-    .regex(
-      /^[a-zA-Z0-9\s\?\!\.\,\-\'\"À-ÿ\u00f1\u00d1\(\)\n\r]+$/,
-      'Special requirements contain invalid characters'
-    )
     .optional()
 }).refine((data: { start_date: string; end_date: string }) => {
   const startDate = new Date(data.start_date);
@@ -91,9 +67,9 @@ export const itineraryRequestSchema = z.object({
   const endDate = new Date(data.end_date);
   const diffTime = Math.abs(endDate.getTime() - startDate.getTime());
   const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-  return diffDays <= 14;
+  return diffDays <= 7;
 }, {
-  message: 'Trip duration cannot exceed 14 days',
+  message: 'Trip duration cannot exceed 7 days',
   path: ['end_date']
 });
 

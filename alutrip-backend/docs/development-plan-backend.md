@@ -319,7 +319,7 @@ CREATE INDEX idx_rate_limits_window_start ON rate_limits(window_start);
 - ✅ **Error Handling:** Comprehensive error responses
 - ✅ **Logging:** Structured logging with Winston
 - ✅ **Testing:** Automated test scripts (bash) for endpoint testing
-- ✅ **Documentation:** Complete API documentation with Swagger
+- ✅ **Documentation:** API documentation with JSDoc comments (Swagger pending)
 - ✅ **Docker:** Full containerization with Docker Compose
 - ✅ **PDF Generation:** Puppeteer-based PDF creation for itineraries
 - ✅ **Queue System:** Bull/BullMQ for asynchronous processing
@@ -939,7 +939,8 @@ cd alutrip-backend
 - [ ] Create database integration tests
 
 **Final Polish**
-- [x] Complete API documentation (Swagger)
+- [ ] Complete API documentation (Swagger)
+- [x] JSDoc comments for API documentation
 - [x] Code review and refactoring
 - [x] Performance optimization
 - [x] Security hardening for open-source usage
@@ -985,7 +986,8 @@ cd alutrip-backend
 - [x] Queue system with fallback mechanisms
 
 ### Documentation
-- [x] API documentation complete (Swagger/OpenAPI)
+- [ ] API documentation complete (Swagger/OpenAPI)
+- [x] JSDoc comments for API documentation
 - [x] README with setup instructions for monorepo
 - [x] Environment variables documented
 - [x] Database schema documented for travel features
@@ -995,6 +997,7 @@ cd alutrip-backend
 - [x] PDF generation documentation
 - [x] Queue system documentation
 - [x] Testing scripts and procedures (automated bash scripts)
+- [ ] Swagger UI implementation (/docs endpoint)
 
 ## BONUS Features Implementation Guide
 
