@@ -135,9 +135,7 @@ export class PDFService {
     itinerary: Itinerary,
     generatedContent: string
   ): Promise<string> {
-    const requestData = typeof itinerary.request_data === 'string' 
-      ? JSON.parse(itinerary.request_data)
-      : itinerary.request_data;
+    
 
     // Calculate trip duration
     const startDate = new Date(itinerary.start_date);
@@ -365,12 +363,7 @@ export class PDFService {
                     <span class="info-value">$${itinerary.budget.toLocaleString()}</span>
                 </div>
                 ` : ''}
-                ${requestData.group_size ? `
-                <div class="info-item">
-                    <span class="info-label">👥 Pessoas:</span>
-                    <span class="info-value">${requestData.group_size} pessoa${requestData.group_size > 1 ? 's' : ''}</span>
-                </div>
-                ` : ''}
+                
             </div>
             
             ${itinerary.interests && itinerary.interests.length > 0 ? `
@@ -382,19 +375,7 @@ export class PDFService {
             </div>
             ` : ''}
             
-            ${requestData.travel_style ? `
-            <div class="info-item" style="margin-top: 15px;">
-                <span class="info-label">✨ Estilo:</span>
-                <span class="info-value">${this.formatTravelStyle(requestData.travel_style)}</span>
-            </div>
-            ` : ''}
             
-            ${requestData.accommodation_type ? `
-            <div class="info-item">
-                <span class="info-label">🏨 Hospedagem:</span>
-                <span class="info-value">${this.formatAccommodationType(requestData.accommodation_type)}</span>
-            </div>
-            ` : ''}
         </div>
         
         <div class="content">
@@ -447,30 +428,7 @@ export class PDFService {
     return formatted;
   }
 
-  /**
-   * Format travel style for display
-   */
-  private static formatTravelStyle(style: string): string {
-    const styles: Record<string, string> = {
-      'budget': 'Econômico',
-      'mid-range': 'Intermediário',
-      'luxury': 'Luxo'
-    };
-    return styles[style] || style;
-  }
-
-  /**
-   * Format accommodation type for display
-   */
-  private static formatAccommodationType(type: string): string {
-    const types: Record<string, string> = {
-      'hotel': 'Hotel',
-      'hostel': 'Hostel',
-      'airbnb': 'Airbnb',
-      'any': 'Qualquer tipo'
-    };
-    return types[type] || type;
-  }
+  
 
   /**
    * Generate unique filename for PDF

@@ -265,10 +265,7 @@ main() {
         "start_date": "2025-06-15",
         "end_date": "2025-06-18",
         "budget": 2000,
-        "interests": ["culture", "food", "temples"],
-        "travel_style": "mid-range",
-        "accommodation_type": "hotel",
-        "group_size": 2
+        "interests": ["culture", "food", "temples"]
     }'
     test_rate_limit_feature "Itinerários" "/api/itinerary/create" "$itinerary_data"
     
