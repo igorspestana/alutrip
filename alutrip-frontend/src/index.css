@@ -1,0 +1,63 @@
+@import url('https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    /* AluTrip Brand Colors */
+    --background: 1 8% 3%; /* #01080E */
+    --foreground: 195 100% 92%; /* #D7F9FF */
+    --card: 1 8% 3%; /* #01080E */
+    --card-foreground: 195 100% 92%; /* #D7F9FF */
+    --popover: 1 8% 3%; /* #01080E */
+    --popover-foreground: 195 100% 92%; /* #D7F9FF */
+    --primary: 195 100% 65%; /* #49DEFD */
+    --primary-foreground: 1 8% 3%; /* #01080E */
+    --secondary: 1 8% 5%; /* #021017 */
+    --secondary-foreground: 195 100% 92%; /* #D7F9FF */
+    --muted: 1 8% 5%; /* #021017 */
+    --muted-foreground: 195 100% 65%; /* #49DEFD */
+    --accent: 1 8% 5%; /* #021017 */
+    --accent-foreground: 195 100% 92%; /* #D7F9FF */
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 210 40% 98%;
+    --border: 195 100% 65%; /* #49DEFD */
+    --input: 195 100% 65%; /* #49DEFD */
+    --ring: 195 100% 65%; /* #49DEFD */
+    --radius: 0.5rem;
+  }
+
+  .dark {
+    /* Dark theme uses same colors as light theme for AluTrip */
+    --background: 1 8% 3%; /* #01080E */
+    --foreground: 195 100% 92%; /* #D7F9FF */
+    --card: 1 8% 3%; /* #01080E */
+    --card-foreground: 195 100% 92%; /* #D7F9FF */
+    --popover: 1 8% 3%; /* #01080E */
+    --popover-foreground: 195 100% 92%; /* #D7F9FF */
+    --primary: 195 100% 65%; /* #49DEFD */
+    --primary-foreground: 1 8% 3%; /* #01080E */
+    --secondary: 1 8% 5%; /* #021017 */
+    --secondary-foreground: 195 100% 92%; /* #D7F9FF */
+    --muted: 1 8% 5%; /* #021017 */
+    --muted-foreground: 195 100% 65%; /* #49DEFD */
+    --accent: 1 8% 5%; /* #021017 */
+    --accent-foreground: 195 100% 92%; /* #D7F9FF */
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 210 40% 98%;
+    --border: 195 100% 65%; /* #49DEFD */
+    --input: 195 100% 65%; /* #49DEFD */
+    --ring: 195 100% 65%; /* #49DEFD */
+  }
+
+  /* Global font family settings */
+  body {
+    font-family: 'Inter', sans-serif;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    font-family: 'Chakra Petch', sans-serif;
+  }
+}

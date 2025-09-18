@@ -1,0 +1,22 @@
+version: '3.8'
+
+services:
+  # Frontend Service
+  alutrip-frontend:
+    build:
+      context: ..
+      dockerfile: Dockerfile
+    ports:
+      - "5173:5173"
+    environment:
+      - VITE_API_URL=http://localhost:3000
+    volumes:
+      - ..:/app
+      - /app/node_modules
+    networks:
+      - alutrip-frontend-network
+    command: npm run dev
+
+networks:
+  alutrip-frontend-network:
+    driver: bridge
