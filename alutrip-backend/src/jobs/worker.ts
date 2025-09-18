@@ -9,14 +9,13 @@ import { logger } from '../config/logger';
  * Handles concurrent job processing with configurable concurrency
  */
 
-// Redis configuration for BullMQ Worker
 const redisConfig = {
   host: 'localhost',
   port: 6379,
-  maxRetriesPerRequest: null, // Required for BullMQ
+  maxRetriesPerRequest: null,
   retryDelayOnFailover: 100,
   connectTimeout: 30000,
-  commandTimeout: 30000, // Increased for BullMQ operations
+  commandTimeout: 30000,
 };
 
 /**
@@ -29,16 +28,12 @@ export const startWorker = async (): Promise<void> => {
       concurrency: config.QUEUE_CONCURRENCY
     });
 
-    // Create BullMQ Worker
     const worker = new Worker('itinerary_processing', processItineraryJob, {
       connection: redisConfig,
       concurrency: config.QUEUE_CONCURRENCY,
     });
 
-    // Store worker reference globally for cleanup
     (global as any).itineraryWorker = worker;
-
-    // Event listeners for monitoring and logging
     worker.on('ready', () => {
       logger.info('BullMQ worker is ready', { context: 'worker' });
     });
@@ -100,7 +95,6 @@ export const startWorker = async (): Promise<void> => {
       processingJobType: 'process-itinerary'
     });
 
-    // Log current queue stats
     try {
       const waiting = await itineraryQueue.getWaiting();
       const active = await itineraryQueue.getActive();
@@ -134,13 +128,11 @@ export const stopWorker = async (): Promise<void> => {
   try {
     logger.info('Stopping BullMQ job worker', { context: 'worker' });
 
-    // Close worker if it exists
     const worker = (global as any).itineraryWorker;
     if (worker) {
       await worker.close();
     }
 
-    // Close queue connections
     await itineraryQueue.close();
 
     logger.info('BullMQ job worker stopped', { context: 'worker' });
@@ -152,7 +144,6 @@ export const stopWorker = async (): Promise<void> => {
   }
 };
 
-// Auto-start worker if this file is run directly
 if (require.main === module) {
   startWorker().catch((error) => {
     logger.error('Worker startup failed', {

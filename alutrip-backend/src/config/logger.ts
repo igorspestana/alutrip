@@ -13,16 +13,13 @@ export const logger = winston.createLogger({
   format: logFormat,
   defaultMeta: { service: 'alutrip-api' },
   transports: [
-    // Write all logs with importance level of 'error' or less to error.log
     new winston.transports.File({
       filename: path.join(config.LOG_DIR, 'error.log'),
       level: 'error'
     }),
-    // Write all logs to combined.log
     new winston.transports.File({
       filename: path.join(config.LOG_DIR, 'combined.log')
     }),
-    // Separate log file for AI/LLM operations
     new winston.transports.File({
       filename: path.join(config.LOG_DIR, 'ai-operations.log'),
       level: 'info',
@@ -37,7 +34,6 @@ export const logger = winston.createLogger({
   ]
 });
 
-// If we're not in production, log to console as well
 if (config.NODE_ENV !== 'production') {
   logger.add(new winston.transports.Console({
     format: winston.format.combine(
@@ -47,7 +43,6 @@ if (config.NODE_ENV !== 'production') {
   }));
 }
 
-// Helper functions for specific logging contexts
 export const logAiOperation = (operation: string, data: any) => {
   logger.info(`AI Operation: ${operation}`, { context: 'ai', ...data });
 };

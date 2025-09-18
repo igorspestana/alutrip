@@ -35,7 +35,6 @@ export class ItineraryService {
       const startDate = new Date(requestData.start_date);
       const endDate = new Date(requestData.end_date);
 
-      // Create itinerary record
       const itinerary = await ItinerariesModel.create(
         clientIp,
         requestData.destination,
@@ -82,19 +81,16 @@ export class ItineraryService {
         throw new Error('Itinerary not found');
       }
 
-      // Update status to processing
       await ItinerariesModel.updateStatus(itineraryId, 'processing');
 
       // Generate AI content
       const generatedContent = await this.generateItineraryContent(itinerary);
 
-      // Determine which model was used (for now, default to groq)
-      const modelUsed: AIModel = 'groq'; // This could be dynamic based on load or other factors
+      const modelUsed: AIModel = 'groq';
 
       // Generate PDF
       const pdfInfo = await pdfService.generateItineraryPDF(itinerary, generatedContent);
 
-      // Update itinerary with generated content and PDF info
       await ItinerariesModel.updateContent(
         itineraryId,
         generatedContent,
@@ -103,7 +99,6 @@ export class ItineraryService {
         pdfInfo.filepath
       );
 
-      // Update status to completed
       await ItinerariesModel.updateStatus(itineraryId, 'completed', new Date());
 
       const processingTime = Date.now() - startTime;
@@ -126,7 +121,6 @@ export class ItineraryService {
         processingTime: `${processingTime}ms`
       });
 
-      // Update status to failed
       await ItinerariesModel.updateStatus(itineraryId, 'failed');
 
       throw error;
@@ -147,7 +141,6 @@ export class ItineraryService {
       // Build comprehensive prompt for itinerary generation
       const prompt = this.buildItineraryPrompt(itinerary);
 
-      // Use AI service to generate content (using groq as primary)
       const aiResponse = await aiService.processItineraryRequest(prompt, 'groq');
 
       logger.info('AI content generated successfully', {
@@ -440,6 +433,5 @@ Crie um roteiro completo e inspirador que torne esta viagem inesquecível!`;
   }
 }
 
-// Export class instance
 export const itineraryService = ItineraryService;
 

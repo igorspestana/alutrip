@@ -1,6 +1,5 @@
 import { z } from 'zod';
 
-// Travel question validation schema
 export const travelQuestionSchema = z.object({
   question: z
     .string()
@@ -16,7 +15,6 @@ export const travelQuestionSchema = z.object({
     })
 });
 
-// Itinerary request validation schema
 export const itineraryRequestSchema = z.object({
   destination: z
     .string()
@@ -73,7 +71,6 @@ export const itineraryRequestSchema = z.object({
   path: ['end_date']
 });
 
-// Query parameter schemas
 export const paginationSchema = z.object({
   limit: z
     .string()
@@ -93,7 +90,6 @@ export const statusFilterSchema = z.object({
     .optional()
 });
 
-// ID parameter schema
 export const idParamSchema = z.object({
   id: z
     .string()

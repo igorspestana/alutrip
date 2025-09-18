@@ -11,7 +11,6 @@ const router = Router();
  * No authentication required - open access travel assistance
  */
 
-// Apply rate limiting to travel question endpoints
 const travelRateLimit = travelQuestionsRateLimit;
 
 /**

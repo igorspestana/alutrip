@@ -8,7 +8,6 @@ import {
 } from '../types/travel';
 
 export class ItinerariesModel {
-  // Create a new itinerary request
   static async create(
     clientIp: string,
     destination: string,
@@ -38,8 +37,8 @@ export class ItinerariesModel {
         budget,
         interests || [],
         JSON.stringify(requestData),
-        '', // Empty generated content initially
-        'groq', // Default model, will be updated when processing
+        '',
+        'groq',
         'pending'
       ]);
       
@@ -62,7 +61,6 @@ export class ItinerariesModel {
     }
   }
 
-  // Get an itinerary by ID
   static async findById(id: number): Promise<Itinerary | null> {
     const sql = `
       SELECT * FROM itineraries 
@@ -74,7 +72,6 @@ export class ItinerariesModel {
       const itinerary = result.rows[0];
       
       if (itinerary) {
-        // Parse JSON fields if they are strings
         if (typeof itinerary.request_data === 'string') {
           itinerary.request_data = JSON.parse(itinerary.request_data);
         }
@@ -90,7 +87,6 @@ export class ItinerariesModel {
     }
   }
 
-  // Update itinerary status
   static async updateStatus(
     id: number,
     status: ProcessingStatus,
@@ -130,7 +126,6 @@ export class ItinerariesModel {
     }
   }
 
-  // Update generated content and PDF info
   static async updateContent(
     id: number,
     generatedContent: string,
@@ -173,7 +168,6 @@ export class ItinerariesModel {
     }
   }
 
-  // Get recent itineraries with pagination and optional status filter
   static async findRecent(
     limit: number = 10,
     offset: number = 0,
@@ -219,7 +213,6 @@ export class ItinerariesModel {
     }
   }
 
-  // Get itineraries by client IP
   static async findByClientIp(
     clientIp: string,
     limit: number = 10,
@@ -252,7 +245,6 @@ export class ItinerariesModel {
     }
   }
 
-  // Get pending itineraries for processing
   static async findPending(limit: number = 10): Promise<Itinerary[]> {
     const sql = `
       SELECT * FROM itineraries 
@@ -279,7 +271,6 @@ export class ItinerariesModel {
     }
   }
 
-  // Get itinerary statistics
   static async getStats(): Promise<{
     total: number;
     today: number;
@@ -328,7 +319,6 @@ export class ItinerariesModel {
     }
   }
 
-  // Delete old itineraries (for cleanup)
   static async deleteOlderThan(days: number): Promise<number> {
     const sql = `
       DELETE FROM itineraries 

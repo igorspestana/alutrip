@@ -2,7 +2,6 @@ import axios from 'axios';
 import { logger } from './logger';
 import { config } from './env';
 
-// Default instance for general use
 export const httpClient = axios.create({
   timeout: config.HTTP_TIMEOUT,
   headers: {
@@ -11,7 +10,6 @@ export const httpClient = axios.create({
   }
 });
 
-// Groq specific instance
 export const groqClient = axios.create({
   baseURL: 'https://api.groq.com/openai/v1',
   timeout: config.GROQ_TIMEOUT,
@@ -21,7 +19,6 @@ export const groqClient = axios.create({
   }
 });
 
-// Gemini specific instance
 export const geminiClient = axios.create({
   baseURL: 'https://generativelanguage.googleapis.com/v1',
   timeout: config.GEMINI_TIMEOUT,
@@ -30,13 +27,11 @@ export const geminiClient = axios.create({
   }
 });
 
-// Add request start time for duration calculation
 const addRequestStartTime = (config: any) => {
   (config as any).metadata = { requestStartedAt: Date.now() };
   return config;
 };
 
-// Request/Response interceptors for logging
 [httpClient, groqClient, geminiClient].forEach(client => {
   client.interceptors.request.use(
     (requestConfig) => {

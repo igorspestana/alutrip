@@ -36,10 +36,8 @@ export class TravelService {
       // Check rate limiting first
       await this.checkRateLimit(clientIp);
 
-      // Process question with AI
       const aiResponse = await aiService.processQuestion(question, model, sessionId);
       
-      // Store in database
       const travelQuestion = await TravelQuestionsModel.create(
         clientIp,
         question,
@@ -48,7 +46,6 @@ export class TravelService {
         sessionId
       );
 
-      // Log successful processing
       logger.info('Travel question processed successfully', {
         questionId: travelQuestion.id,
         clientIp,
@@ -58,7 +55,6 @@ export class TravelService {
         sessionId
       });
 
-      // Return formatted response
       return this.formatQuestionResponse(travelQuestion);
 
     } catch (error) {
@@ -70,7 +66,6 @@ export class TravelService {
         sessionId
       });
 
-      // Re-throw with appropriate error handling
       if ((error as any).provider) {
         throw new Error(`AI service error: ${(error as Error).message}`);
       }
@@ -273,7 +268,6 @@ export class TravelService {
   getPreferredModel(): AIModel | null {
     const modelInfo = aiService.getModelInfo();
     
-    // Prefer Groq if available, fallback to Gemini
     if (modelInfo.groq.available) {
       return 'groq';
     } else if (modelInfo.gemini.available) {
@@ -288,10 +282,8 @@ export class TravelService {
    */
   private async checkRateLimit(clientIp: string): Promise<void> {
     return new Promise((resolve, reject) => {
-      // Use existing rate limit middleware
       const rateLimiter = travelQuestionsRateLimit;
       
-      // Mock request/response objects for rate limiter
       const req: any = {
         ip: clientIp,
         headers: {},
@@ -358,5 +350,4 @@ export class TravelService {
   }
 }
 
-// Export singleton instance
 export const travelService = new TravelService();

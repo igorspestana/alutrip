@@ -27,7 +27,7 @@ router.get('/queue-status', async (req, res) => {
         stats,
         detailed,
         queue_name: itineraryQueue.name,
-        redis_status: 'connected' // Assuming connected if we got here
+        redis_status: 'connected'
       }
     });
 
@@ -59,7 +59,6 @@ router.post('/force-process/:jobId', async (req, res) => {
       clientIp: req.ip
     });
 
-    // Get the job
     const job = await itineraryQueue.getJob(jobId);
     
     if (!job) {
@@ -81,7 +80,6 @@ router.post('/force-process/:jobId', async (req, res) => {
       finishedOn: job.finishedOn
     });
 
-    // Try to retry the job
     await job.retry();
 
     res.json({
@@ -153,12 +151,10 @@ router.post('/restart-worker', async (req, res) => {
       clientIp: req.ip
     });
 
-    // Skip cleaning for now due to Bull typing issues
     logger.info('Restarting worker...', {
       context: 'debug'
     });
 
-    // Restart worker (this will re-register the processor)
     await startWorker();
 
     res.json({

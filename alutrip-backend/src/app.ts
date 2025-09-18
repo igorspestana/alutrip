@@ -14,10 +14,8 @@ import swaggerUi from 'swagger-ui-express';
 import { swaggerSpec } from './config/swagger';
 import { errorHandler, notFoundHandler } from './middleware/error-handler';
 
-// Create Express application
 const app = express();
 
-// Security middleware
 app.use(helmet({
   contentSecurityPolicy: {
     directives: {
@@ -38,8 +36,6 @@ app.use(helmet({
     preload: true
   }
 }));
-
-// CORS configuration
 const corsOptions = {
   origin: config.CORS_ORIGIN,
   credentials: config.CORS_CREDENTIALS,
@@ -49,11 +45,7 @@ const corsOptions = {
 };
 
 app.use(cors(corsOptions));
-
-// Compression middleware
 app.use(compression());
-
-// Body parsing middleware
 app.use(express.json({ limit: '1mb' }));
 app.use(express.urlencoded({ extended: true, limit: '1mb' }));
 
@@ -81,7 +73,6 @@ app.use((req, res, next) => {
   next();
 });
 
-// Routes
 app.use('/', routes);
 
 // Swagger docs (available without auth; restrict in production if needed)
@@ -91,23 +82,16 @@ app.get('/docs.json', (_req, res) => {
   res.send(swaggerSpec);
 });
 
-// 404 handler
 app.use('*', notFoundHandler);
-
-// Error handling middleware (must be last)
 app.use(errorHandler);
 
-// Initialize database, Redis, and queue system
 const initializeServices = async(): Promise<void> => {
   try {
     await initializeDatabase();
     await initializeRedis();
     await initializeQueue();
     
-    // Start background job worker
     await startWorker();
-    
-    // Start auto-fallback monitoring system
     startAutoFallback();
     
     logger.info('All services initialized successfully');
@@ -119,28 +103,22 @@ const initializeServices = async(): Promise<void> => {
   }
 };
 
-// Graceful shutdown
 const gracefulShutdown = async(signal: string): Promise<void> => {
   logger.info(`Received ${signal}, shutting down gracefully`);
   
   try {
-    // Close database connections
     const { closeDatabase } = await import('./config/database');
     await closeDatabase();
     
-    // Close Redis connections
     const { closeRedis } = await import('./config/redis');
     await closeRedis();
     
-    // Close queue connections
     const { closeQueue } = await import('./config/queue');
     await closeQueue();
     
-    // Stop worker
     const { stopWorker } = await import('./jobs/worker');
     await stopWorker();
     
-    // Stop auto-fallback monitoring
     const { stopAutoFallback } = await import('./jobs/auto-fallback.job');
     stopAutoFallback();
     
@@ -154,11 +132,9 @@ const gracefulShutdown = async(signal: string): Promise<void> => {
   }
 };
 
-// Handle shutdown signals
 process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
 process.on('SIGINT', () => gracefulShutdown('SIGINT'));
 
-// Handle uncaught exceptions
 process.on('uncaughtException', (error: Error) => {
   logger.error('Uncaught Exception', { 
     error: error.message, 
@@ -167,7 +143,6 @@ process.on('uncaughtException', (error: Error) => {
   process.exit(1);
 });
 
-// Handle unhandled promise rejections
 process.on('unhandledRejection', (reason: any, promise: Promise<any>) => {
   logger.error('Unhandled Rejection', { 
     reason: reason?.message || reason,
@@ -176,19 +151,15 @@ process.on('unhandledRejection', (reason: any, promise: Promise<any>) => {
   process.exit(1);
 });
 
-// Start server
 const startServer = async(): Promise<void> => {
   try {
-    // Initialize services
     await initializeServices();
     
-    // Start HTTP server
     const PORT = config.PORT;
     
     const server = app.listen(PORT, () => {
       const baseUrl = `http://localhost:${PORT}`;
       
-      // Server startup banner
       console.log('\n' + '='.repeat(60));
       console.log('🚀 AluTrip Travel Assistant API');
       console.log('='.repeat(60));
@@ -200,8 +171,6 @@ const startServer = async(): Promise<void> => {
       console.log(`   🏥 Health Check: ${baseUrl}/health`);
       console.log(`   🔧 Detailed Health: ${baseUrl}/health/detailed`);
       console.log(`   📚 API Documentation: ${baseUrl}/docs`);
-      console.log(`   🧳 Travel Q&A: ${baseUrl}/api/travel/ask`);
-      console.log(`   📋 Itinerary Planning: ${baseUrl}/api/itinerary/create`);
       console.log('');
       console.log('🛡️  SECURITY SETTINGS:');
       console.log(`   🌐 CORS Origin: ${config.CORS_ORIGIN}`);
@@ -209,7 +178,6 @@ const startServer = async(): Promise<void> => {
       console.log(`   📊 Rate Limiting: IP-based (${config.RATE_LIMIT_REQUESTS} requests/24h per feature)`);
       console.log('');
       
-      // Environment warnings
       const warnings = [];
       if (config.GROQ_API_KEY.includes('your-groq-api-key')) {
         warnings.push('⚠️  Groq API Key is using default value');
@@ -231,7 +199,6 @@ const startServer = async(): Promise<void> => {
       console.log('   • Stop Server: Ctrl+C');
       console.log('='.repeat(60) + '\n');
       
-      // Also log to winston
       logger.info('='.repeat(60));
       logger.info(`🌍 Environment: ${config.NODE_ENV.toUpperCase()}`);
       logger.info(`🚀 AluTrip Travel Assistant API server started on port ${PORT}`);
@@ -243,7 +210,6 @@ const startServer = async(): Promise<void> => {
       logger.info('='.repeat(60));
     });
     
-    // Handle server errors
     server.on('error', (error: any) => {
       if (error.code === 'EADDRINUSE') {
         logger.error(`Port ${PORT} is already in use`);
@@ -262,7 +228,6 @@ const startServer = async(): Promise<void> => {
   }
 };
 
-// Start the server
 if (require.main === module) {
   startServer();
 }

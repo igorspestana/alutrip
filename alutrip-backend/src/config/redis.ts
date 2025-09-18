@@ -2,7 +2,6 @@ import Redis from 'ioredis';
 import { config } from './env';
 import { logger } from './logger';
 
-// Redis connection configuration
 const redisConfig = {
   retryDelayOnFailover: 100,
   enableReadyCheck: false,
@@ -14,13 +13,10 @@ const redisConfig = {
   retryDelayOnClusterDown: 300
 };
 
-// Main Redis client
 export const redis = new Redis(config.REDIS_URL, redisConfig);
 
-// Queue Redis client (separate connection for Bull queues)
 export const queueRedis = new Redis(config.REDIS_QUEUE_URL || config.REDIS_URL, redisConfig);
 
-// Redis event handlers
 redis.on('connect', () => {
   logger.info('Redis client connected');
 });
@@ -41,7 +37,6 @@ redis.on('reconnecting', () => {
   logger.info('Redis client reconnecting');
 });
 
-// Queue Redis event handlers
 queueRedis.on('connect', () => {
   logger.info('Queue Redis client connected');
 });
@@ -54,7 +49,6 @@ queueRedis.on('error', (error) => {
   logger.error('Queue Redis client error', { error: error.message });
 });
 
-// Redis health check
 export const checkRedisHealth = async(): Promise<boolean> => {
   try {
     const pong = await redis.ping();
@@ -69,7 +63,6 @@ export const checkRedisHealth = async(): Promise<boolean> => {
   }
 };
 
-// Rate limiting helper functions
 export const getRateLimit = async(key: string): Promise<number> => {
   try {
     const count = await redis.get(key);
@@ -109,7 +102,6 @@ export const getRateLimitTTL = async(key: string): Promise<number> => {
   }
 };
 
-// Cache helper functions
 export const getCachedValue = async(key: string): Promise<string | null> => {
   try {
     const value = await redis.get(key);
@@ -143,7 +135,6 @@ export const deleteCachedValue = async(key: string): Promise<void> => {
   }
 };
 
-// Graceful shutdown
 export const closeRedis = async(): Promise<void> => {
   try {
     await redis.quit();
@@ -154,7 +145,6 @@ export const closeRedis = async(): Promise<void> => {
   }
 };
 
-// Initialize Redis connection
 export const initializeRedis = async(): Promise<void> => {
   try {
     await redis.connect();

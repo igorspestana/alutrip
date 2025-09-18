@@ -1,7 +1,6 @@
 import { z } from 'zod';
 import dotenv from 'dotenv';
 
-// Load environment variables
 dotenv.config();
 
 const envSchema = z.object({
@@ -56,7 +55,6 @@ type EnvType = z.infer<typeof envSchema>;
 let config: EnvType;
 
 try {
-  // Parse and validate environment variables
   config = envSchema.parse(process.env);
 } catch (error) {
   if (error instanceof z.ZodError) {

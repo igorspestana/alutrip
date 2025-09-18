@@ -2,20 +2,17 @@ import { Pool, PoolConfig } from 'pg';
 import { config } from './env';
 import { logger } from './logger';
 
-// Database connection configuration
 const poolConfig: PoolConfig = {
   connectionString: config.DATABASE_URL,
-  max: 20, // Maximum number of clients in the pool
-  idleTimeoutMillis: 30000, // How long a client is allowed to remain idle before being closed
-  connectionTimeoutMillis: 2000, // How long to wait when connecting a new client
-  statement_timeout: 30000, // Maximum duration of any statement
-  query_timeout: 30000 // Maximum duration of any query
+  max: 20,
+  idleTimeoutMillis: 30000,
+  connectionTimeoutMillis: 2000,
+  statement_timeout: 30000,
+  query_timeout: 30000
 };
 
-// Create connection pool
 export const pool = new Pool(poolConfig);
 
-// Pool event handlers
 pool.on('connect', () => {
   logger.info('Database client connected', { 
     totalCount: pool.totalCount,
@@ -36,7 +33,6 @@ pool.on('release', () => {
   logger.debug('Database client released back to pool');
 });
 
-// Database health check
 export const checkDatabaseHealth = async(): Promise<boolean> => {
   try {
     const client = await pool.connect();
@@ -50,7 +46,6 @@ export const checkDatabaseHealth = async(): Promise<boolean> => {
   }
 };
 
-// Execute a query with automatic error handling and logging
 export const query = async(text: string, params?: any[]): Promise<any> => {
   const start = Date.now();
   try {
@@ -59,7 +54,7 @@ export const query = async(text: string, params?: any[]): Promise<any> => {
     
     logger.debug('Database query executed', {
       text,
-      params: params?.map(() => '[PARAM]'), // Hide parameter values for security
+      params: params?.map(() => '[PARAM]'),
       duration: `${duration}ms`,
       rows: result.rowCount
     });
@@ -77,7 +72,6 @@ export const query = async(text: string, params?: any[]): Promise<any> => {
   }
 };
 
-// Get a client from the pool for transactions
 export const getClient = async() => {
   try {
     const client = await pool.connect();
@@ -88,7 +82,6 @@ export const getClient = async() => {
   }
 };
 
-// Graceful shutdown
 export const closeDatabase = async(): Promise<void> => {
   try {
     await pool.end();
@@ -98,7 +91,6 @@ export const closeDatabase = async(): Promise<void> => {
   }
 };
 
-// Initialize database connection
 export const initializeDatabase = async(): Promise<void> => {
   try {
     const isHealthy = await checkDatabaseHealth();

@@ -15,7 +15,6 @@ const router = Router();
  *       200:
  *         description: API is healthy
  */
-// Basic health check endpoint
 router.get('/', healthController.getHealth);
 
 /**
@@ -24,7 +23,7 @@ router.get('/', healthController.getHealth);
  *   get:
  *     tags:
  *       - Health
- *     summary: Detailed system information
+ *     summary: Detailed system information (for monitoring)
  *     description: Provides detailed information about the system status, including dependencies and environment
  *     responses:
  *       200:
@@ -32,7 +31,6 @@ router.get('/', healthController.getHealth);
  *       500:
  *         description: Failed to retrieve detailed health information
  */
-// Detailed health check (for monitoring)
 router.get('/detailed', healthController.getDetailedHealth);
 
 /**
@@ -41,7 +39,7 @@ router.get('/detailed', healthController.getDetailedHealth);
  *   get:
  *     tags:
  *       - Health
- *     summary: Readiness probe
+ *     summary: Readiness probe (for Kubernetes)
  *     description: Indicates whether the application is ready to serve traffic
  *     responses:
  *       200:
@@ -49,7 +47,6 @@ router.get('/detailed', healthController.getDetailedHealth);
  *       503:
  *         description: Application is not ready
  */
-// Readiness probe (for Kubernetes)
 router.get('/ready', healthController.getReadiness);
 
 /**
@@ -58,13 +55,12 @@ router.get('/ready', healthController.getReadiness);
  *   get:
  *     tags:
  *       - Health
- *     summary: Liveness probe
+ *     summary: Liveness probe (for Kubernetes)
  *     description: Indicates whether the application is alive
  *     responses:
  *       200:
  *         description: Application is alive
  */
-// Liveness probe (for Kubernetes)
 router.get('/live', healthController.getLiveness);
 
 export { router as healthRoutes };

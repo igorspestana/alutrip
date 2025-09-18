@@ -18,12 +18,10 @@ export class AIService {
   private geminiAI: GoogleGenerativeAI;
   
   constructor() {
-    // Initialize Groq SDK
     this.groqClient = new Groq({
       apiKey: config.GROQ_API_KEY,
     });
     
-    // Initialize Gemini AI
     this.geminiAI = new GoogleGenerativeAI(config.GEMINI_API_KEY);
   }
 
@@ -45,7 +43,6 @@ export class AIService {
         sessionId
       });
 
-      // First, check if the question is travel-related
       const isTravelRelated = this.isTravelRelatedQuestion(question);
       
       if (!isTravelRelated) {
@@ -56,7 +53,6 @@ export class AIService {
           sessionId
         });
 
-        // Return a polite decline response without using AI
         const declineMessage = 
           'Olá! Eu sou o AluTrip, seu assistente de viagem! Eu estou aqui para ajudar você com tudo que envolve ' +
           'destinos, hospedagens, passeios, restaurantes e dicas de viagem. Essa pergunta que você fez foge um pouquinho ' +
@@ -113,13 +109,10 @@ export class AIService {
         sessionId
       });
       
-      // Create AI service specific error
       const aiError = new Error(
         `Failed to process question with ${model}: ${(error as Error).message}`
       ) as Error & { provider: string; status?: number; code?: string };
       aiError.provider = model;
-      
-      // Add specific error codes if available
       if (axios.isAxiosError(error)) {
         if (error.response?.status) {
           aiError.status = error.response.status;
@@ -190,13 +183,10 @@ export class AIService {
         sessionId
       });
       
-      // Create AI service specific error
       const aiError = new Error(
         `Failed to process itinerary with ${model}: ${(error as Error).message}`
       ) as Error & { provider: string; status?: number; code?: string };
       aiError.provider = model;
-      
-      // Add specific error codes if available
       if (axios.isAxiosError(error)) {
         if (error.response?.status) {
           aiError.status = error.response.status;
@@ -254,7 +244,7 @@ export class AIService {
           completion_tokens: 0,
           total_tokens: 0
         },
-        processing_time_ms: 0 // Will be set by parent method
+        processing_time_ms: 0
       };
       
     } catch (error) {
@@ -284,7 +274,7 @@ export class AIService {
           }
         ],
         model: config.GROQ_MODEL,
-        temperature: 0.8, // Slightly higher creativity for itineraries
+        temperature: 0.8,
         max_tokens: 8192,
         top_p: 1,
         stream: false,
@@ -309,7 +299,7 @@ export class AIService {
           completion_tokens: 0,
           total_tokens: 0
         },
-        processing_time_ms: 0 // Will be set by parent method
+        processing_time_ms: 0
       };
       
     } catch (error) {
@@ -348,11 +338,11 @@ export class AIService {
         content: text.trim(),
         model_used: 'gemini',
         token_usage: {
-          prompt_tokens: 0, // Gemini doesn't provide token usage details in current SDK
+          prompt_tokens: 0,
           completion_tokens: 0,
           total_tokens: 0
         },
-        processing_time_ms: 0 // Will be set by parent method
+        processing_time_ms: 0
       };
       
     } catch (error) {
@@ -391,11 +381,11 @@ export class AIService {
         content: text.trim(),
         model_used: 'gemini',
         token_usage: {
-          prompt_tokens: 0, // Gemini doesn't provide token usage details in current SDK
+          prompt_tokens: 0,
           completion_tokens: 0,
           total_tokens: 0
         },
-        processing_time_ms: 0 // Will be set by parent method
+        processing_time_ms: 0
       };
       
     } catch (error) {
@@ -415,17 +405,14 @@ export class AIService {
   private isTravelRelatedQuestion(question: string): boolean {
     const lowerQuestion = question.toLowerCase().trim();
     
-    // If question is too short or empty, reject
     if (lowerQuestion.length < 3) {
       return false;
     }
     
-    // Count travel-related keywords
     const travelScore = TRAVEL_KEYWORDS.reduce((score, keyword) => {
       return score + (lowerQuestion.includes(keyword) ? 1 : 0);
     }, 0);
     
-    // Count non-travel keywords
     const nonTravelScore = NON_TRAVEL_KEYWORDS.reduce((score, keyword) => {
       return score + (lowerQuestion.includes(keyword) ? 1 : 0);
     }, 0);
@@ -628,7 +615,6 @@ Seu objetivo é criar um roteiro completo que torne a viagem inesquecível e bem
       gemini: { status: 'unhealthy' }
     };
 
-    // Test Groq
     try {
       await this.groqClient.chat.completions.create({
         messages: [{ role: 'user', content: 'Hello' }],
@@ -640,7 +626,6 @@ Seu objetivo é criar um roteiro completo que torne a viagem inesquecível e bem
       results.groq.error = (error as Error).message;
     }
 
-    // Test Gemini
     try {
       const model = this.geminiAI.getGenerativeModel({ model: config.GEMINI_MODEL });
       await model.generateContent('Hello');
@@ -672,5 +657,4 @@ Seu objetivo é criar um roteiro completo que torne a viagem inesquecível e bem
   }
 }
 
-// Export singleton instance
 export const aiService = new AIService();
