@@ -26,8 +26,6 @@ export interface TravelQuestionResponse {
 }
 
 // Itinerary types
-export type TravelStyle = 'budget' | 'mid-range' | 'luxury';
-export type AccommodationType = 'hotel' | 'hostel' | 'airbnb' | 'any';
 export type ProcessingStatus = 'pending' | 'processing' | 'completed' | 'failed';
 
 export interface Itinerary {
@@ -55,10 +53,6 @@ export interface ItineraryRequestData {
   end_date: string;
   budget?: number;
   interests?: string[];
-  travel_style?: TravelStyle;
-  accommodation_type?: AccommodationType;
-  group_size?: number;
-  special_requirements?: string;
 }
 
 export interface ItineraryRequest extends ItineraryRequestData {}

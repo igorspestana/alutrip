@@ -6,6 +6,9 @@ import { config } from './config/env';
 import { logger } from './config/logger';
 import { initializeDatabase } from './config/database';
 import { initializeRedis } from './config/redis';
+import { initializeQueue } from './config/queue';
+import { startWorker } from './jobs/worker';
+import { startAutoFallback } from './jobs/auto-fallback.job';
 import { routes } from './routes';
 import { errorHandler, notFoundHandler } from './middleware/error-handler';
 
@@ -85,11 +88,18 @@ app.use('*', notFoundHandler);
 // Error handling middleware (must be last)
 app.use(errorHandler);
 
-// Initialize database and Redis connections
+// Initialize database, Redis, and queue system
 const initializeServices = async(): Promise<void> => {
   try {
     await initializeDatabase();
     await initializeRedis();
+    await initializeQueue();
+    
+    // Start background job worker
+    await startWorker();
+    
+    // Start auto-fallback monitoring system
+    startAutoFallback();
     
     logger.info('All services initialized successfully');
   } catch (error) {
@@ -112,6 +122,18 @@ const gracefulShutdown = async(signal: string): Promise<void> => {
     // Close Redis connections
     const { closeRedis } = await import('./config/redis');
     await closeRedis();
+    
+    // Close queue connections
+    const { closeQueue } = await import('./config/queue');
+    await closeQueue();
+    
+    // Stop worker
+    const { stopWorker } = await import('./jobs/worker');
+    await stopWorker();
+    
+    // Stop auto-fallback monitoring
+    const { stopAutoFallback } = await import('./jobs/auto-fallback.job');
+    stopAutoFallback();
     
     logger.info('All connections closed, exiting process');
     process.exit(0);
@@ -169,7 +191,8 @@ const startServer = async(): Promise<void> => {
       console.log(`   🏥 Health Check: ${baseUrl}/health`);
       console.log(`   🔧 Detailed Health: ${baseUrl}/health/detailed`);
       console.log(`   📚 API Documentation: ${baseUrl}/docs (coming soon)`);
-      console.log(`   🔧 API Base: ${baseUrl}/api (coming soon)`);
+      console.log(`   🧳 Travel Q&A: ${baseUrl}/api/travel/ask`);
+      console.log(`   📋 Itinerary Planning: ${baseUrl}/api/itinerary/create`);
       console.log('');
       console.log('🛡️  SECURITY SETTINGS:');
       console.log(`   🌐 CORS Origin: ${config.CORS_ORIGIN}`);

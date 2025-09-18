@@ -183,11 +183,7 @@ Submit an itinerary request for generation.
   "start_date": "2024-04-15",
   "end_date": "2024-04-22",
   "budget": 2000,
-  "interests": ["culture", "food", "temples"],
-  "travel_style": "budget",
-  "accommodation_type": "hotel",
-  "group_size": 2,
-  "special_requirements": "Vegetarian friendly restaurants"
+  "interests": ["culture", "food", "temples"]
 }
 ```
 
@@ -197,10 +193,6 @@ Submit an itinerary request for generation.
 - `end_date` (string, required): End date in YYYY-MM-DD format (max 7 days from start)
 - `budget` (number, optional): Budget in USD (min: 100, max: 50000)
 - `interests` (array, optional): Array of interests (max 10 items)
-- `travel_style` (string, optional): `budget`, `mid-range`, or `luxury`
-- `accommodation_type` (string, optional): `hotel`, `hostel`, `airbnb`, or `any`
-- `group_size` (number, optional): Number of travelers (min: 1, max: 20)
-- `special_requirements` (string, optional): Special requirements (max 500 characters)
 
 **Response:**
 ```json
@@ -572,10 +564,7 @@ curl -X POST http://localhost:3000/api/itinerary/create \
     "start_date": "2024-06-15",
     "end_date": "2024-06-18",
     "budget": 1500,
-    "interests": ["culture", "food", "art"],
-    "travel_style": "mid-range",
-    "accommodation_type": "hotel",
-    "group_size": 2
+    "interests": ["culture", "food", "art"]
   }'
 ```
 

@@ -52,11 +52,7 @@ const itineraryRequestSchema = z.object({
   start_date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Invalid date format"),
   end_date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Invalid date format"),
   budget: z.number().min(100).max(50000).optional(),
-  interests: z.array(z.string().max(50)).max(10).optional(),
-  travel_style: z.enum(["budget", "mid-range", "luxury"]).optional(),
-  accommodation_type: z.enum(["hotel", "hostel", "airbnb", "any"]).optional(),
-  group_size: z.number().min(1).max(20).optional(),
-  special_requirements: z.string().max(500).optional()
+  interests: z.array(z.string().max(50)).max(10).optional()
 });
 ```
 
