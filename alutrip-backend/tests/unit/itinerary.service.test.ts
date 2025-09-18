@@ -44,17 +44,17 @@ describe('ItineraryService', () => {
 
   describe('createItinerary', () => {
     it('should create itinerary successfully', async () => {
-      // Arrange
+
       mockedItinerariesModel.create.mockResolvedValue(mockItineraryPending);
 
-      // Act
+
       const result = await ItineraryService.createItinerary(
         testClientIp,
         mockItineraryRequestData,
         testSessionId
       );
 
-      // Assert
+
       expect(result).toEqual(mockItineraryPending);
       expect(mockedItinerariesModel.create).toHaveBeenCalledWith(
         testClientIp,
@@ -85,7 +85,7 @@ describe('ItineraryService', () => {
     });
 
     it('should handle database errors during creation', async () => {
-      // Arrange
+
       mockedItinerariesModel.create.mockRejectedValue(itineraryErrorScenarios.databaseError);
 
       // Act & Assert
@@ -104,7 +104,7 @@ describe('ItineraryService', () => {
     });
 
     it('should handle invalid date parsing', async () => {
-      // Arrange
+
       const invalidRequestData = {
         ...mockItineraryRequestData,
         start_date: 'invalid-date'
@@ -119,17 +119,17 @@ describe('ItineraryService', () => {
 
   describe('processItinerary', () => {
     it('should process itinerary successfully', async () => {
-      // Arrange
+
       mockedItinerariesModel.findById.mockResolvedValue(mockItineraryPending);
       mockedItinerariesModel.updateStatus.mockResolvedValue(undefined as any);
       mockedItinerariesModel.updateContent.mockResolvedValue(undefined as any);
       mockedAIService.processItineraryRequest.mockResolvedValue(mockAIItineraryResponse);
       mockedPDFService.generateItineraryPDF.mockResolvedValue(mockPDFServiceResponse);
 
-      // Act
+
       await ItineraryService.processItinerary(mockItineraryPending.id);
 
-      // Assert
+
       expect(mockedItinerariesModel.findById).toHaveBeenCalledWith(mockItineraryPending.id);
       expect(mockedItinerariesModel.updateStatus).toHaveBeenCalledWith(
         mockItineraryPending.id,
@@ -168,7 +168,7 @@ describe('ItineraryService', () => {
     });
 
     it('should handle itinerary not found', async () => {
-      // Arrange
+
       mockedItinerariesModel.findById.mockResolvedValue(null);
 
       // Act & Assert
@@ -178,7 +178,7 @@ describe('ItineraryService', () => {
     });
 
     it('should handle AI service errors', async () => {
-      // Arrange
+
       mockedItinerariesModel.findById.mockResolvedValue(mockItineraryPending);
       mockedItinerariesModel.updateStatus.mockResolvedValue(undefined as any);
       mockedAIService.processItineraryRequest.mockRejectedValue(itineraryErrorScenarios.aiServiceError);
@@ -204,7 +204,7 @@ describe('ItineraryService', () => {
     });
 
     it('should handle PDF generation errors', async () => {
-      // Arrange
+
       mockedItinerariesModel.findById.mockResolvedValue(mockItineraryPending);
       mockedItinerariesModel.updateStatus.mockResolvedValue(undefined as any);
       mockedAIService.processItineraryRequest.mockResolvedValue(mockAIItineraryResponse);
@@ -222,7 +222,7 @@ describe('ItineraryService', () => {
     });
 
     it('should measure processing time correctly', async () => {
-      // Arrange
+
       const startTime = Date.now();
       const endTime = startTime + 5000; // 5 seconds later
       
@@ -236,10 +236,10 @@ describe('ItineraryService', () => {
       mockedAIService.processItineraryRequest.mockResolvedValue(mockAIItineraryResponse);
       mockedPDFService.generateItineraryPDF.mockResolvedValue(mockPDFServiceResponse);
 
-      // Act
+
       await ItineraryService.processItinerary(mockItineraryPending.id);
 
-      // Assert
+
       expect(mockedLogger.info).toHaveBeenCalledWith(
         'Itinerary processing completed successfully',
         expect.objectContaining({
@@ -251,30 +251,30 @@ describe('ItineraryService', () => {
 
   describe('getItinerary', () => {
     it('should return existing itinerary', async () => {
-      // Arrange
+
       mockedItinerariesModel.findById.mockResolvedValue(mockItineraryCompleted);
 
-      // Act
+
       const result = await ItineraryService.getItinerary(mockItineraryCompleted.id);
 
-      // Assert
+
       expect(result).toEqual(mockItineraryCompleted);
       expect(mockedItinerariesModel.findById).toHaveBeenCalledWith(mockItineraryCompleted.id);
     });
 
     it('should return null for non-existent itinerary', async () => {
-      // Arrange
+
       mockedItinerariesModel.findById.mockResolvedValue(null);
 
-      // Act
+
       const result = await ItineraryService.getItinerary(999);
 
-      // Assert
+
       expect(result).toBeNull();
     });
 
     it('should handle database errors', async () => {
-      // Arrange
+
       mockedItinerariesModel.findById.mockRejectedValue(itineraryErrorScenarios.databaseError);
 
       // Act & Assert
@@ -294,13 +294,13 @@ describe('ItineraryService', () => {
 
   describe('getRecentItineraries', () => {
     it('should return recent itineraries with pagination', async () => {
-      // Arrange
+
       mockedItinerariesModel.findRecent.mockResolvedValue(mockRecentItinerariesResponse);
 
-      // Act
+
       const result = await ItineraryService.getRecentItineraries(10, 0);
 
-      // Assert
+
       expect(result).toEqual({
         itineraries: mockRecentItinerariesResponse.itineraries,
         total: mockRecentItinerariesResponse.total,
@@ -315,49 +315,49 @@ describe('ItineraryService', () => {
     });
 
     it('should use default pagination values', async () => {
-      // Arrange
+
       mockedItinerariesModel.findRecent.mockResolvedValue(mockRecentItinerariesResponse);
 
-      // Act
+
       await ItineraryService.getRecentItineraries();
 
-      // Assert
+
       expect(mockedItinerariesModel.findRecent).toHaveBeenCalledWith(10, 0, undefined);
     });
 
     it('should filter by status', async () => {
-      // Arrange
+
       mockedItinerariesModel.findRecent.mockResolvedValue(mockRecentItinerariesResponse);
 
-      // Act
+
       await ItineraryService.getRecentItineraries(5, 0, 'completed');
 
-      // Assert
+
       expect(mockedItinerariesModel.findRecent).toHaveBeenCalledWith(5, 0, 'completed');
     });
 
     it('should calculate has_more correctly', async () => {
-      // Arrange
+
       const largeResponse = { itineraries: mockItinerariesList, total: 50 };
       mockedItinerariesModel.findRecent.mockResolvedValue(largeResponse);
 
-      // Act
+
       const result = await ItineraryService.getRecentItineraries(10, 0);
 
-      // Assert
+
       expect(result.pagination.has_more).toBe(true);
     });
   });
 
   describe('getClientItineraries', () => {
     it('should return itineraries for specific client', async () => {
-      // Arrange
+
       mockedItinerariesModel.findByClientIp.mockResolvedValue([mockItineraryCompleted]);
 
-      // Act
+
       const result = await ItineraryService.getClientItineraries(testClientIp, 5, 0);
 
-      // Assert
+
       expect(result).toEqual([mockItineraryCompleted]);
       expect(mockedItinerariesModel.findByClientIp).toHaveBeenCalledWith(testClientIp, 5, 0);
     });
@@ -365,13 +365,13 @@ describe('ItineraryService', () => {
 
   describe('getPendingItineraries', () => {
     it('should return pending itineraries', async () => {
-      // Arrange
+
       mockedItinerariesModel.findPending.mockResolvedValue([mockItineraryPending]);
 
-      // Act
+
       const result = await ItineraryService.getPendingItineraries(10);
 
-      // Assert
+
       expect(result).toEqual([mockItineraryPending]);
       expect(mockedItinerariesModel.findPending).toHaveBeenCalledWith(10);
     });
@@ -379,13 +379,13 @@ describe('ItineraryService', () => {
 
   describe('getStats', () => {
     it('should return itinerary statistics', async () => {
-      // Arrange
+
       mockedItinerariesModel.getStats.mockResolvedValue(mockItineraryStats);
 
-      // Act
+
       const result = await ItineraryService.getStats();
 
-      // Assert
+
       expect(result).toEqual(mockItineraryStats);
       expect(mockedItinerariesModel.getStats).toHaveBeenCalled();
     });
@@ -393,34 +393,34 @@ describe('ItineraryService', () => {
 
   describe('isPDFAvailable', () => {
     it('should return true for available PDF', async () => {
-      // Arrange
+
       mockedPDFService.pdfExists.mockResolvedValue(true);
 
-      // Act
+
       const result = await ItineraryService.isPDFAvailable(mockItineraryCompleted);
 
-      // Assert
+
       expect(result).toBe(true);
       expect(mockedPDFService.pdfExists).toHaveBeenCalledWith(mockItineraryCompleted.pdf_path);
     });
 
     it('should return false for missing PDF info', async () => {
-      // Act
+
       const result = await ItineraryService.isPDFAvailable(mockItineraryPending);
 
-      // Assert
+
       expect(result).toBe(false);
       expect(mockedPDFService.pdfExists).not.toHaveBeenCalled();
     });
 
     it('should return false for non-existent PDF file', async () => {
-      // Arrange
+
       mockedPDFService.pdfExists.mockResolvedValue(false);
 
-      // Act
+
       const result = await ItineraryService.isPDFAvailable(mockItineraryCompleted);
 
-      // Assert
+
       expect(result).toBe(false);
     });
   });
@@ -438,10 +438,10 @@ describe('ItineraryService', () => {
     });
 
     it('should return estimated completion time', () => {
-      // Act
+
       const result = ItineraryService.getEstimatedCompletionTime();
 
-      // Assert
+
       expect(result instanceof Date).toBe(true);
       const expectedTime = new Date(new Date().getTime() + (4 * 60 * 1000));
       expect(Math.abs(result.getTime() - expectedTime.getTime())).toBeLessThan(60000);
@@ -493,21 +493,21 @@ describe('ItineraryService', () => {
 
   describe('cleanupOldPDFs', () => {
     it('should cleanup old PDFs successfully', async () => {
-      // Arrange
+
       const deletedCount = 15;
       mockedItinerariesModel.deleteOlderThan.mockResolvedValue(deletedCount);
 
-      // Act
+
       const result = await ItineraryService.cleanupOldPDFs(30);
 
-      // Assert
+
       expect(result).toBe(deletedCount);
       expect(mockedItinerariesModel.deleteOlderThan).toHaveBeenCalledWith(30);
       expect(mockedLogger.info).toHaveBeenCalledWith('PDF cleanup completed', { deletedCount });
     });
 
     it('should handle cleanup errors', async () => {
-      // Arrange
+
       const cleanupError = new Error('Cleanup failed');
       mockedItinerariesModel.deleteOlderThan.mockRejectedValue(cleanupError);
 
@@ -529,17 +529,17 @@ describe('ItineraryService', () => {
   describe('Itinerary prompt generation', () => {
     itineraryPromptTestCases.forEach(({ name, itinerary, shouldContain, shouldNotContain }) => {
       it(`should generate correct prompt for ${name}`, async () => {
-        // Arrange
+  
         mockedItinerariesModel.findById.mockResolvedValue(itinerary as any);
         mockedItinerariesModel.updateStatus.mockResolvedValue(undefined as any);
         mockedItinerariesModel.updateContent.mockResolvedValue(undefined as any);
         mockedAIService.processItineraryRequest.mockResolvedValue(mockAIItineraryResponse);
         mockedPDFService.generateItineraryPDF.mockResolvedValue(mockPDFServiceResponse);
 
-        // Act
+  
         await ItineraryService.processItinerary(itinerary.id);
 
-        // Assert
+  
         const aiServiceCall = mockedAIService.processItineraryRequest.mock.calls[0];
         const generatedPrompt = aiServiceCall?.[0];
 
@@ -564,7 +564,7 @@ describe('ItineraryService', () => {
 
   describe('Error handling and cleanup', () => {
     it('should handle database errors gracefully', async () => {
-      // Arrange
+
       mockedItinerariesModel.findRecent.mockRejectedValue(itineraryErrorScenarios.databaseError);
 
       // Act & Assert
@@ -581,7 +581,7 @@ describe('ItineraryService', () => {
     });
 
     it('should ensure proper cleanup on processing failure', async () => {
-      // Arrange
+
       mockedItinerariesModel.findById.mockResolvedValue(mockItineraryPending);
       mockedItinerariesModel.updateStatus.mockResolvedValue(undefined as any);
       mockedAIService.processItineraryRequest.mockRejectedValue(new Error('Processing failed'));
@@ -591,7 +591,7 @@ describe('ItineraryService', () => {
         ItineraryService.processItinerary(mockItineraryPending.id)
       ).rejects.toThrow('Processing failed');
 
-      // Verify status was updated to failed
+
       expect(mockedItinerariesModel.updateStatus).toHaveBeenCalledWith(
         mockItineraryPending.id,
         'failed'

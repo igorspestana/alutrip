@@ -66,13 +66,13 @@ describe('AIService', () => {
 
     describe('Travel-related questions', () => {
       it('should process travel question with Groq successfully', async () => {
-        // Arrange
+  
         (mockGroqClient.chat.completions.create as jest.Mock).mockResolvedValue(mockGroqChatCompletion);
 
-        // Act
+  
         const result = await aiService.processQuestion(travelQuestions[0]!!, 'groq', sessionId);
 
-        // Assert
+  
         expect(result.content).toBe(mockGroqChatCompletion.choices[0]?.message?.content);
         expect(result.model_used).toBe('groq');
         expect(result.token_usage?.total_tokens).toBe(225);
@@ -92,13 +92,13 @@ describe('AIService', () => {
       });
 
       it('should process travel question with Gemini successfully', async () => {
-        // Arrange
+  
         mockGeminiModel.generateContent.mockResolvedValue(mockGeminiResponse);
 
-        // Act
+  
         const result = await aiService.processQuestion(travelQuestions[1]!, 'gemini', sessionId);
 
-        // Assert
+  
         expect(result.content).toBe(mockGeminiResponse.response.text());
         expect(result.model_used).toBe('gemini');
         // processing_time_ms is computed in the public wrapper and may be 0 in tests
@@ -114,10 +114,10 @@ describe('AIService', () => {
 
     describe('Non-travel questions', () => {
       it('should decline non-travel questions without calling AI APIs', async () => {
-        // Act
+  
         const result = await aiService.processQuestion(nonTravelQuestions[0]!, 'groq', sessionId);
 
-        // Assert
+  
         expect(result.content).toBe(mockNonTravelDeclineResponse.content);
         expect(result.token_usage?.total_tokens).toBe(0);
         expect(mockGroqClient.chat.completions.create).not.toHaveBeenCalled();
@@ -133,7 +133,7 @@ describe('AIService', () => {
 
     describe('Error handling', () => {
       it('should handle Groq API errors', async () => {
-        // Arrange
+  
         const groqError = new Error('Groq API rate limit exceeded');
         (mockGroqClient.chat.completions.create as jest.Mock).mockRejectedValue(groqError);
 
@@ -153,7 +153,7 @@ describe('AIService', () => {
       });
 
       it('should handle Gemini API errors', async () => {
-        // Arrange
+  
         const geminiError = new Error('Gemini API timeout');
         mockGeminiModel.generateContent.mockRejectedValue(geminiError);
 
@@ -191,13 +191,13 @@ describe('AIService', () => {
     const sessionId = 'test-session';
 
     it('should process itinerary request with Groq successfully', async () => {
-      // Arrange
+
       (mockGroqClient.chat.completions.create as jest.Mock).mockResolvedValue(mockGroqItineraryChatCompletion);
 
-      // Act
+
       const result = await aiService.processItineraryRequest(testPrompt, 'groq', sessionId);
 
-      // Assert
+
       expect(result.content).toContain('Paris, França');
       expect(result.model_used).toBe('groq');
       expect(mockGroqClient.chat.completions.create).toHaveBeenCalledWith(
@@ -213,13 +213,13 @@ describe('AIService', () => {
     });
 
     it('should process itinerary request with Gemini successfully', async () => {
-      // Arrange
+
       mockGeminiModel.generateContent.mockResolvedValue(mockGeminiItineraryResponse);
 
-      // Act
+
       const result = await aiService.processItineraryRequest(testPrompt, 'gemini', sessionId);
 
-      // Assert
+
       expect(result.content).toContain('Paris');
       expect(result.model_used).toBe('gemini');
       expect(mockGeminiClient.getGenerativeModel).toHaveBeenCalledWith({
@@ -231,7 +231,7 @@ describe('AIService', () => {
     });
 
     it('should handle itinerary processing errors', async () => {
-      // Arrange
+
       const itineraryError = new Error('Itinerary generation failed');
       (mockGroqClient.chat.completions.create as jest.Mock).mockRejectedValue(itineraryError);
 
@@ -244,7 +244,7 @@ describe('AIService', () => {
 
   describe('healthCheck', () => {
     it('should return healthy status for all services', async () => {
-      // Arrange
+
       (mockGroqClient.chat.completions.create as jest.Mock).mockResolvedValue({
         choices: [{ message: { content: 'Hello' } }]
       } as any);
@@ -252,10 +252,10 @@ describe('AIService', () => {
         response: { text: () => 'Hello' }
       });
 
-      // Act
+
       const result = await aiService.healthCheck();
 
-      // Assert
+
       expect(result.groq.status).toBe('healthy');
       expect(result.gemini.status).toBe('healthy');
       expect(mockGroqClient.chat.completions.create).toHaveBeenCalledWith(expect.objectContaining({
@@ -266,14 +266,14 @@ describe('AIService', () => {
     });
 
     it('should return unhealthy status when services fail', async () => {
-      // Arrange
+
       (mockGroqClient.chat.completions.create as jest.Mock).mockRejectedValue(new Error('Connection failed'));
       mockGeminiModel.generateContent.mockRejectedValue(new Error('API key invalid'));
 
-      // Act
+
       const result = await aiService.healthCheck();
 
-      // Assert
+
       expect(result.groq.status).toBe('unhealthy');
       expect(result.groq.error).toBe('Connection failed');
       expect(result.gemini.status).toBe('unhealthy');
@@ -281,16 +281,16 @@ describe('AIService', () => {
     });
 
     it('should handle partial health check success', async () => {
-      // Arrange
+
       (mockGroqClient.chat.completions.create as jest.Mock).mockResolvedValue({
         choices: [{ message: { content: 'Hello' } }]
       } as any);
       mockGeminiModel.generateContent.mockRejectedValue(new Error('Service unavailable'));
 
-      // Act
+
       const result = await aiService.healthCheck();
 
-      // Assert
+
       expect(result.groq.status).toBe('healthy');
       expect(result.gemini.status).toBe('unhealthy');
       expect(result.gemini.error).toBe('Service unavailable');
@@ -299,10 +299,10 @@ describe('AIService', () => {
 
   describe('getModelInfo', () => {
     it('should return model information with availability', () => {
-      // Act
+
       const result = aiService.getModelInfo();
 
-      // Assert
+
       expect(result).toEqual({
         groq: {
           model: 'llama-3.1-8b-instant',
@@ -316,15 +316,15 @@ describe('AIService', () => {
     });
 
     it('should mark models as unavailable with default API keys', () => {
-      // Arrange
+
       const originalConfig = { ...mockConfig };
       (mockConfig as any).GROQ_API_KEY = 'your-groq-api-key';
       (mockConfig as any).GEMINI_API_KEY = 'your-gemini-api-key';
 
-      // Act
+
       const result = aiService.getModelInfo();
 
-      // Assert
+
       expect(result.groq.available).toBe(false);
       expect(result.gemini.available).toBe(false);
 
@@ -335,15 +335,15 @@ describe('AIService', () => {
 
   describe('Travel question filtering', () => {
     it('should correctly identify travel-related questions', async () => {
-      // Arrange
+
       (mockGroqClient.chat.completions.create as jest.Mock).mockResolvedValue(mockGroqChatCompletion);
 
       // Test all travel questions
       for (const question of travelQuestions) {
-        // Act
+  
         const result = await aiService.processQuestion(question, 'groq');
 
-        // Assert
+  
         expect(result.content).not.toBe(mockNonTravelDeclineResponse.content);
         expect(mockGroqClient.chat.completions.create).toHaveBeenCalled();
       }
@@ -352,15 +352,15 @@ describe('AIService', () => {
     it('should correctly reject non-travel questions', async () => {
       // Test all non-travel questions
       for (const question of nonTravelQuestions) {
-        // Act
+  
         const result = await aiService.processQuestion(question, 'groq');
 
-        // Assert
+  
         expect(result.content).toBe(mockNonTravelDeclineResponse.content);
         expect(result.token_usage?.total_tokens).toBe(0);
       }
 
-      // Verify AI APIs were never called
+
       expect(mockGroqClient.chat.completions.create).not.toHaveBeenCalled();
     });
 

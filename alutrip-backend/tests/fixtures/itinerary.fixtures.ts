@@ -3,8 +3,8 @@ import { Itinerary, ItineraryRequestData, ProcessingStatus, AIModel } from '../.
 // Mock itinerary request data
 export const mockItineraryRequestData: ItineraryRequestData = {
   destination: 'Paris, France',
-  start_date: '2024-03-15',
-  end_date: '2024-03-18',
+  start_date: '2025-12-15',
+  end_date: '2025-12-18',
   budget: 1500,
   interests: ['culture', 'museums', 'gastronomy']
 };
@@ -15,15 +15,15 @@ export const mockItineraryPending: Itinerary = {
   session_id: 'session123',
   client_ip: '127.0.0.1',
   destination: 'Paris, France',
-  start_date: new Date('2024-03-15'),
-  end_date: new Date('2024-03-18'),
+  start_date: new Date('2025-12-15'),
+  end_date: new Date('2025-12-18'),
   budget: 1500,
   interests: ['culture', 'museums', 'gastronomy'],
   request_data: mockItineraryRequestData,
   generated_content: '',
   model_used: 'groq',
   processing_status: 'pending',
-  created_at: new Date('2024-01-15T10:00:00.000Z')
+  created_at: new Date('2025-09-18T10:00:00.000Z')
 };
 
 // Mock itinerary with processing status
@@ -57,7 +57,7 @@ Paris, a Cidade Luz, é um dos destinos mais românticos e culturalmente ricos d
   pdf_path: '/app/pdfs/itinerary_paris_france_2_1234567890.pdf',
   model_used: 'groq',
   processing_status: 'completed',
-  completed_at: new Date('2024-01-15T10:05:00.000Z')
+  completed_at: new Date('2025-09-18T10:05:00.000Z')
 };
 
 // Mock failed itinerary
@@ -197,7 +197,8 @@ export const itineraryPromptTestCases = [
     name: 'Single day trip',
     itinerary: {
       ...mockItineraryPending,
-      end_date: new Date('2024-03-15') // Same as start date for calculation
+      start_date: new Date('2025-12-15'),
+      end_date: new Date('2025-12-16') // Next day for 1 day duration
     } as Itinerary,
     shouldContain: ['1 dia'] // Should show singular form
   }

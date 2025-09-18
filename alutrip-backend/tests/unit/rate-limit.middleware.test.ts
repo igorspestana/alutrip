@@ -51,14 +51,14 @@ describe('Rate Limit Middleware', () => {
 
   describe('getRateLimitInfo', () => {
     it('should calculate correct rate limit info', async () => {
-      // Arrange
+
       mockedGetRateLimit.mockResolvedValue(2);
       mockedGetRateLimitTTL.mockResolvedValue(3600); // 1 hour TTL
 
-      // Act
+
       const result = await getRateLimitInfo('test-key', 86400000, 5);
 
-      // Assert
+
       expect(result).toEqual({
         used: 2,
         limit: 5,
@@ -70,14 +70,14 @@ describe('Rate Limit Middleware', () => {
     });
 
     it('should handle zero remaining correctly', async () => {
-      // Arrange
+
       mockedGetRateLimit.mockResolvedValue(5);
       mockedGetRateLimitTTL.mockResolvedValue(7200); // 2 hours TTL
 
-      // Act
+
       const result = await getRateLimitInfo('test-key', 86400000, 5);
 
-      // Assert
+
       expect(result.remaining).toBe(0);
       expect(result.used).toBe(5);
     });
@@ -97,17 +97,17 @@ describe('Rate Limit Middleware', () => {
     });
 
     it('should allow requests within rate limit', async () => {
-      // Arrange
+
       mockedGetRateLimit.mockResolvedValue(2);
       mockedGetRateLimitTTL.mockResolvedValue(3600);
       mockedIncrementRateLimit.mockResolvedValue(3);
       // After increment, getRateLimitInfo is called again; simulate used=3
       mockedGetRateLimit.mockResolvedValueOnce(2).mockResolvedValueOnce(3);
 
-      // Act
+
       await rateLimiter(req, res, next);
 
-      // Assert
+
       expect(next).toHaveBeenCalledWith();
       expect(res.set).toHaveBeenCalledWith(
         expectedRateLimitHeaders(
@@ -123,7 +123,7 @@ describe('Rate Limit Middleware', () => {
     });
 
     it('should block requests when rate limit exceeded', async () => {
-      // Arrange
+
       mockedGetRateLimit.mockResolvedValue(5);
       mockedGetRateLimitTTL.mockResolvedValue(3600);
       const rateLimitError = new Error('Rate limit exceeded') as any;
@@ -131,10 +131,10 @@ describe('Rate Limit Middleware', () => {
       rateLimitError.type = 'rate_limit';
       mockedCreateRateLimitError.mockReturnValue(rateLimitError as any);
 
-      // Act
+
       await createRateLimiter('travel_questions')(req, res, next);
 
-      // Assert
+
       expect(next).toHaveBeenCalledWith(rateLimitError);
       expect(mockedIncrementRateLimit).not.toHaveBeenCalled();
       expect(mockedCreateRateLimitError).toHaveBeenCalledWith(
@@ -145,28 +145,28 @@ describe('Rate Limit Middleware', () => {
     });
 
     it('should handle Redis errors gracefully', async () => {
-      // Arrange
+
       const redisError = new Error('Redis connection failed');
       mockedGetRateLimit.mockRejectedValue(redisError);
 
-      // Act
+
       await rateLimiter(req, res, next);
 
-      // Assert
+
       expect(next).toHaveBeenCalledWith(redisError);
     });
 
     it('should use correct key format for different features', async () => {
-      // Arrange
+
       const itineraryRateLimiter = createRateLimiter('itineraries');
       mockedGetRateLimit.mockResolvedValue(1);
       mockedGetRateLimitTTL.mockResolvedValue(3600);
       mockedIncrementRateLimit.mockResolvedValue(2);
 
-      // Act
+
       await itineraryRateLimiter(req, res, next);
 
-      // Assert
+
       expect(mockedGetRateLimit).toHaveBeenCalledWith('rate_limit:itineraries:127.0.0.1');
       expect(mockedIncrementRateLimit).toHaveBeenCalledWith(
         'rate_limit:itineraries:127.0.0.1',
@@ -175,24 +175,24 @@ describe('Rate Limit Middleware', () => {
     });
 
     it('should handle unknown IP addresses', async () => {
-      // Arrange
+
       req.ip = undefined;
       req.connection.remoteAddress = undefined;
       mockedGetRateLimit.mockResolvedValue(0);
       mockedGetRateLimitTTL.mockResolvedValue(3600);
       mockedIncrementRateLimit.mockResolvedValue(1);
 
-      // Act
+
       await rateLimiter(req, res, next);
 
-      // Assert
+
       expect(mockedGetRateLimit).toHaveBeenCalledWith('rate_limit:travel_questions:unknown');
     });
   });
 
   describe('Predefined rate limiters', () => {
     it('should have correct configuration for travel questions', async () => {
-      // Arrange
+
       const req = createMockRequest(clientIp) as any;
       const res = createMockResponse();
       const next = createMockNext();
@@ -201,10 +201,10 @@ describe('Rate Limit Middleware', () => {
       mockedGetRateLimitTTL.mockResolvedValue(3600);
       mockedIncrementRateLimit.mockResolvedValue(2);
 
-      // Act
+
       await travelQuestionsRateLimit(req as any, res, next);
 
-      // Assert
+
       expect(mockedGetRateLimit).toHaveBeenCalledWith('rate_limit:travel_questions:127.0.0.1');
       expect(res.set).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -214,7 +214,7 @@ describe('Rate Limit Middleware', () => {
     });
 
     it('should have correct configuration for itineraries', async () => {
-      // Arrange
+
       const req = createMockRequest(clientIp) as any;
       const res = createMockResponse();
       const next = createMockNext();
@@ -223,10 +223,10 @@ describe('Rate Limit Middleware', () => {
       mockedGetRateLimitTTL.mockResolvedValue(3600);
       mockedIncrementRateLimit.mockResolvedValue(1);
 
-      // Act
+
       await itinerariesRateLimit(req as any, res, next);
 
-      // Assert
+
       expect(mockedGetRateLimit).toHaveBeenCalledWith('rate_limit:itineraries:127.0.0.1');
       expect(res.set).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -238,7 +238,7 @@ describe('Rate Limit Middleware', () => {
 
   describe('getRateLimitStatus', () => {
     it('should return rate limit status for all features', async () => {
-      // Arrange
+
       mockedGetRateLimit
         .mockResolvedValueOnce(3) // travel_questions
         .mockResolvedValueOnce(1); // itineraries
@@ -246,10 +246,10 @@ describe('Rate Limit Middleware', () => {
         .mockResolvedValueOnce(3600)
         .mockResolvedValueOnce(3600);
 
-      // Act
+
       const result = await getRateLimitStatus(clientIp);
 
-      // Assert
+
       expect(result).toEqual({
         ip: clientIp,
         limits: {
@@ -270,7 +270,7 @@ describe('Rate Limit Middleware', () => {
     });
 
     it('should handle errors in status retrieval', async () => {
-      // Arrange
+
       const redisError = new Error('Redis error');
       mockedGetRateLimit.mockRejectedValue(redisError);
 
@@ -281,24 +281,24 @@ describe('Rate Limit Middleware', () => {
 
   describe('cleanupExpiredRateLimits', () => {
     it('should log cleanup operations', async () => {
-      // Act
+
       await cleanupExpiredRateLimits();
 
-      // Assert
+
       expect(mockedLogger.info).toHaveBeenCalledWith('Starting rate limit cleanup');
       expect(mockedLogger.info).toHaveBeenCalledWith('Rate limit cleanup completed');
     });
 
     it('should handle cleanup errors', async () => {
-      // Arrange
+
       mockedLogger.info.mockImplementationOnce(() => {
         throw new Error('Cleanup failed');
       });
 
-      // Act
+
       await cleanupExpiredRateLimits();
 
-      // Assert
+
       expect(mockedLogger.error).toHaveBeenCalledWith(
         'Rate limit cleanup failed',
         { error: 'Cleanup failed' }
@@ -308,7 +308,7 @@ describe('Rate Limit Middleware', () => {
 
   describe('Rate limit integration scenarios', () => {
     it('should handle concurrent requests correctly', async () => {
-      // Arrange
+
       const rateLimiter = createRateLimiter('travel_questions');
       const requests = Array(3).fill(null).map(() => ({
         req: createMockRequest(clientIp),
@@ -316,7 +316,7 @@ describe('Rate Limit Middleware', () => {
         next: createMockNext()
       }));
 
-      // Mock sequential increments
+
       mockedGetRateLimit
         .mockResolvedValueOnce(2) // First request
         .mockResolvedValueOnce(3) // Second request  
@@ -327,19 +327,19 @@ describe('Rate Limit Middleware', () => {
         .mockResolvedValueOnce(4)
         .mockResolvedValueOnce(5);
 
-      // Act
+
       await Promise.all(requests.map(({ req, res, next }) =>
         rateLimiter(req as any, res, next)
       ));
 
-      // Assert
+
       requests.forEach(({ next }) => {
         expect(next).toHaveBeenCalledWith();
       });
     });
 
     it('should differentiate between different IPs', async () => {
-      // Arrange
+
       const rateLimiter = createRateLimiter('travel_questions');
       const requests = testClientIps.map(ip => ({
         req: createMockRequest(ip),
@@ -351,12 +351,12 @@ describe('Rate Limit Middleware', () => {
       mockedGetRateLimitTTL.mockResolvedValue(3600);
       mockedIncrementRateLimit.mockResolvedValue(3);
 
-      // Act
+
       await Promise.all(requests.map(({ req, res, next }) =>
         rateLimiter(req as any, res, next)
       ));
 
-      // Assert
+
       testClientIps.forEach(ip => {
         expect(mockedGetRateLimit).toHaveBeenCalledWith(`rate_limit:travel_questions:${ip}`);
         expect(mockedIncrementRateLimit).toHaveBeenCalledWith(
@@ -367,7 +367,7 @@ describe('Rate Limit Middleware', () => {
     });
 
     it('should maintain separate counts for different features', async () => {
-      // Arrange
+
       const travelRateLimiter = createRateLimiter('travel_questions');
       const itineraryRateLimiter = createRateLimiter('itineraries');
       
@@ -383,11 +383,11 @@ describe('Rate Limit Middleware', () => {
       mockedGetRateLimitTTL.mockResolvedValue(3600);
       mockedIncrementRateLimit.mockResolvedValue(2);
 
-      // Act
+
       await travelRateLimiter(req1 as any, res1, next1);
       await itineraryRateLimiter(req2 as any, res2, next2);
 
-      // Assert
+
       expect(mockedGetRateLimit).toHaveBeenCalledWith('rate_limit:travel_questions:127.0.0.1');
       expect(mockedGetRateLimit).toHaveBeenCalledWith('rate_limit:itineraries:127.0.0.1');
       expect(next1).toHaveBeenCalled();
