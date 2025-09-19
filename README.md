@@ -60,6 +60,87 @@ The project follows a hybrid architecture with independent backend and frontend:
 
 ## 🚀 How to Run
 
+### Environment Configuration (Required)
+
+Before running the project, you need to configure the environment variables for both backend and frontend:
+
+#### Backend Configuration
+
+Create a `.env` file in the `alutrip-backend/` directory based on `.env.example`:
+
+```bash
+# Server Configuration
+PORT=3000
+NODE_ENV=development
+
+# Database Configuration
+DATABASE_URL=postgresql://alutrip_user:alutrip_password@localhost:5432/alutrip_backend
+REDIS_URL=redis://localhost:6379
+
+# AI Service Configuration - Groq
+GROQ_API_KEY=your-groq-api-key
+GROQ_MODEL=llama-3.1-8b-instant
+
+# AI Service Configuration - Gemini
+GEMINI_API_KEY=your-gemini-api-key
+GEMINI_MODEL=gemini-2.5-flash
+
+# Rate Limiting Configuration
+RATE_LIMIT_REQUESTS=5
+RATE_LIMIT_WINDOW=86400000
+RATE_LIMIT_CLEANUP_INTERVAL=3600000
+
+# PDF Configuration
+PDF_STORAGE_PATH=./pdfs
+PDF_MAX_PAGES=50
+PDF_TIMEOUT=300000
+
+# Queue Configuration
+REDIS_QUEUE_URL=redis://localhost:6379
+QUEUE_CONCURRENCY=5
+QUEUE_MAX_ATTEMPTS=3
+
+# Logging Configuration
+LOG_LEVEL=info
+LOG_DIR=logs
+
+# HTTP Client Configuration
+HTTP_TIMEOUT=30000
+GROQ_TIMEOUT=60000
+GEMINI_TIMEOUT=60000
+
+# CORS Configuration (for Frontend)
+CORS_ORIGIN=http://localhost:5173
+CORS_CREDENTIALS=false
+
+# Session Configuration (for future features)
+SESSION_TIMEOUT=7200000
+
+# Docker Configuration
+POSTGRES_USER=alutrip_user
+POSTGRES_PASSWORD=your_postgres_password
+PGADMIN_EMAIL=admin@alutrip.com
+PGADMIN_PASSWORD=your_pgadmin_password
+REDIS_COMMANDER_USER=admin
+REDIS_COMMANDER_PASSWORD=your_redis_commander_password
+```
+
+#### API Keys
+
+For full functionality, configure the API keys:
+
+1. **Groq**: Get it at https://console.groq.com/
+2. **Gemini**: Get it at https://makersuite.google.com/app/apikey
+
+#### Frontend Configuration
+
+Create a `.env` file in the `alutrip-frpntend/` directory based on `.env.example`:
+
+```bash
+# API Configuration
+VITE_API_URL=http://localhost:3000
+```
+
 ### Quick Start (Recommended)
 
 The easiest way to start the entire AluTrip application is using the automated startup script:
@@ -188,40 +269,6 @@ After running the systems:
 - **Redis Commander**: http://localhost:8001
 
 ## ⚙️ Configuration
-
-### Environment Variables
-
-Create a `.env` file in the `alutrip-backend/` directory based on `.env.example`:
-
-```bash
-# Database
-POSTGRES_USER=alutrip_user
-POSTGRES_PASSWORD=your_postgres_password
-
-# Redis
-REDIS_URL=redis://localhost:6379
-
-# AI Providers (required for full functionality)
-GROQ_API_KEY=your-groq-api-key
-GEMINI_API_KEY=your-gemini-api-key
-
-# Rate Limiting
-RATE_LIMIT_REQUESTS=5
-RATE_LIMIT_WINDOW=86400000
-
-# Admin Tools
-PGADMIN_EMAIL=admin@alutrip.com
-PGADMIN_PASSWORD=your_pgadmin_password
-REDIS_COMMANDER_USER=admin
-REDIS_COMMANDER_PASSWORD=your_redis_commander_password
-```
-
-### API Keys
-
-For full functionality, configure the API keys:
-
-1. **Groq**: Get it at https://console.groq.com/
-2. **Gemini**: Get it at https://makersuite.google.com/app/apikey
 
 ## 🧪 Testing
 
