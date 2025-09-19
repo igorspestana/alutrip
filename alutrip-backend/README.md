@@ -55,11 +55,35 @@ pdfs/               # Generated PDFs
 
 ## 🚀 How to Run
 
-### Option 1: Local Execution (Development)
+### Backend
 
-#### 1. Backend (Recommended with Docker)
+#### Option 1: Docker (Recommended)
 
-**IMPORTANT**: To test the system properly, it's recommended to start infrastructure services with Docker:
+```bash
+# Navigate to backend directory
+cd alutrip-backend
+
+# Start all services (including backend)
+npm run dc:up
+
+# Wait for services to be ready (30-60 seconds)
+# Check container status
+npm run dc:ps
+
+# Run database migrations
+npm run migrate:dev up
+
+# Check migration status
+npm run migrate:dev status
+
+# Check logs
+npm run dc:logs
+
+# Stop services
+npm run dc:down
+```
+
+#### Option 2: Local Development
 
 ```bash
 # Navigate to backend directory
@@ -75,37 +99,20 @@ npm run dc:ps
 # Run database migrations
 npm run migrate:dev up
 
+# Check migration status
+npm run migrate:dev status
+
 # Install dependencies and run in development mode
 npm install
 npm run dev
 ```
 
 **Services available after starting containers:**
+- Backend API: `http://localhost:3000` (Docker) or `http://localhost:3000` (Local)
 - PostgreSQL: `localhost:5432`
 - Redis: `localhost:6379`
 - PgAdmin: `http://localhost:8080` (admin@alutrip.com / your_pgadmin_password)
 - Redis Commander: `http://localhost:8001` (admin / your_redis_commander_password)
-
-### Option 2: Execution with Docker Compose
-
-#### Complete Backend
-
-```bash
-cd alutrip-backend
-
-# Start all services (including backend)
-npm run dc:up
-
-# Wait for services to be ready (30-60 seconds)
-# Run database migrations
-npm run migrate:dev up
-
-# Check logs
-npm run dc:logs
-
-# Stop services
-npm run dc:down
-```
 
 ## ⚙️ Configuration
 

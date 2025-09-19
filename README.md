@@ -60,11 +60,62 @@ The project follows a hybrid architecture with independent backend and frontend:
 
 ## 🚀 How to Run
 
-### Option 1: Local Execution (Development)
+### Quick Start (Recommended)
 
-#### 1. Backend (Recommended with Docker)
+The easiest way to start the entire AluTrip application is using the automated startup script:
 
-**IMPORTANT**: To test the system properly, it's recommended to start infrastructure services with Docker:
+```bash
+# Start the complete application (Backend + Frontend)
+./start-alutrip.sh
+```
+
+This script will:
+1. ✅ Check prerequisites (Docker, .env file)
+2. 🐳 Start all backend services (PostgreSQL, Redis, PgAdmin, Redis Commander)
+3. ⏳ Wait for services to be ready
+4. 🗄️ Run database migrations
+5. 🎨 Start the frontend
+6. 🌐 Display all access URLs
+
+**To stop all services:**
+```bash
+# Stop all services
+./stop-alutrip.sh
+```
+
+### Manual Setup (Advanced)
+
+If you prefer to run services manually or need more control:
+
+#### Backend
+
+##### Option 1: Docker (Recommended)
+
+```bash
+# Navigate to backend directory
+cd alutrip-backend
+
+# Start all services (including backend)
+npm run dc:up
+
+# Wait for services to be ready (30-60 seconds)
+# Check container status
+npm run dc:ps
+
+# Run database migrations
+npm run migrate:dev up
+
+# Check migration status
+npm run migrate:dev status
+
+# Check logs
+npm run dc:logs
+
+# Stop services
+npm run dc:down
+```
+
+##### Option 2: Local Development
 
 ```bash
 # Navigate to backend directory
@@ -80,6 +131,9 @@ npm run dc:ps
 # Run database migrations
 npm run migrate:dev up
 
+# Check migration status
+npm run migrate:dev status
+
 # Install dependencies and run in development mode
 npm install
 npm run dev
@@ -91,43 +145,12 @@ npm run dev
 - PgAdmin: `http://localhost:8080` (admin@alutrip.com / your_pgadmin_password)
 - Redis Commander: `http://localhost:8001` (admin / your_redis_commander_password)
 
-#### 2. Frontend
+#### Frontend
+
+##### Option 1: Docker (Recommended)
 
 ```bash
 # Navigate to frontend directory
-cd alutrip-frontend
-
-# Install dependencies
-npm install
-
-# Run in development mode
-npm run dev
-```
-
-### Option 2: Execution with Docker Compose
-
-#### Complete Backend
-
-```bash
-cd alutrip-backend
-
-# Start all services (including backend)
-npm run dc:up
-
-# Wait for services to be ready (30-60 seconds)
-# Run database migrations
-npm run migrate:dev up
-
-# Check logs
-npm run dc:logs
-
-# Stop services
-npm run dc:down
-```
-
-#### Frontend
-
-```bash
 cd alutrip-frontend
 
 # Start frontend with Docker
@@ -138,6 +161,19 @@ npm run dc:logs
 
 # Stop services
 npm run dc:down
+```
+
+##### Option 2: Local Development
+
+```bash
+# Navigate to frontend directory
+cd alutrip-frontend
+
+# Install dependencies
+npm install
+
+# Run in development mode
+npm run dev
 ```
 
 ## 🌐 Service Access
@@ -220,6 +256,26 @@ Backend logs are saved in:
 - Redis: Automatic connection verification
 
 ## 🔧 Useful Commands
+
+### Root Project Commands
+
+```bash
+# Quick start (recommended)
+npm start                    # Start complete application
+npm run stop                 # Stop all services
+npm run dev                  # Alias for npm start
+
+# Setup and build
+npm run setup                # Install dependencies for both projects
+npm run build                # Build both projects for production
+
+# Testing and quality
+npm test                     # Run backend tests
+npm run test:coverage        # Run tests with coverage
+npm run lint                 # Check code quality
+npm run lint:fix             # Fix lint issues
+npm run format               # Format code
+```
 
 ### Backend
 
@@ -322,10 +378,23 @@ This project is licensed under the MIT License. See the `LICENSE` file for more 
 
 For questions or issues:
 
-1. Check logs in `alutrip-backend/logs/`
-2. Consult API documentation at `/docs`
-3. Check container status with `npm run dc:ps`
-4. Open an issue in the repository
+1. **Quick Start Issues**: If the automated script fails:
+   - Check if Docker is running: `docker info`
+   - Verify .env file exists in `alutrip-backend/`
+   - Check container status: `cd alutrip-backend && npm run dc:ps`
+   - View logs: `cd alutrip-backend && npm run dc:logs`
+
+2. **Manual Troubleshooting**:
+   - Check logs in `alutrip-backend/logs/`
+   - Consult API documentation at `/docs`
+   - Check container status with `npm run dc:ps`
+   - Open an issue in the repository
+
+3. **Common Issues**:
+   - **Port conflicts**: Make sure ports 3000, 5173, 5432, 6379, 8080, 8001 are available
+   - **Docker not running**: Start Docker Desktop or Docker daemon
+   - **Permission issues**: Make sure scripts are executable (`chmod +x *.sh`)
+   - **Environment variables**: Check if API keys are properly configured in `.env`
 
 ---
 
