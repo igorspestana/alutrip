@@ -9,9 +9,14 @@ import { logger } from '../config/logger';
  * Handles concurrent job processing with configurable concurrency
  */
 
+const redisUrl = config.REDIS_QUEUE_URL || config.REDIS_URL;
 const redisConfig = {
-  host: 'localhost',
-  port: 6379,
+  host: redisUrl.includes('://') 
+    ? new URL(redisUrl).hostname 
+    : redisUrl.split(':')[0] || 'localhost',
+  port: redisUrl.includes('://') 
+    ? parseInt(new URL(redisUrl).port || '6379') || 6379
+    : parseInt(redisUrl.split(':')[1] || '6379') || 6379,
   maxRetriesPerRequest: null,
   retryDelayOnFailover: 100,
   connectTimeout: 30000,

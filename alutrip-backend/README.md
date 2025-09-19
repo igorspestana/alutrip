@@ -127,6 +127,21 @@ The Docker Compose configuration includes:
 
 All services are configured with default credentials that should be changed for production use.
 
+### Database Migrations
+
+The project includes automatic database schema management through migrations:
+
+- **Migration files**: Located in `migrations/` directory (numbered SQL files)
+- **Migration tracking**: Automatic tracking of executed migrations in `migrations` table
+- **Two execution modes**:
+  - `migrate:dev` - Runs TypeScript files directly (for local development)
+  - `migrate` - Runs compiled JavaScript files (for Docker/production)
+
+**When to run migrations:**
+- First time setup: Always run after starting database
+- After pulling code updates: Check if new migrations were added
+- Before deploying: Ensure all migrations are applied
+
 ### Development
 
 #### Option 1: Docker (Recommended)
@@ -135,16 +150,23 @@ All services are configured with default credentials that should be changed for 
 # Start all services (PostgreSQL, Redis, API) using root .env
 npm run dc:up
 
+# Run database migrations (required on first run)
+npm run migrate up
+
+# Check migration status (optional)
+npm run migrate status
+
 # View logs
-npm run dc:logs -- alutrip-backend-api
+npm run dc:logs -- alutrip-backend
 
 # Stop services
 npm run dc:down
 ```
 
-Note:
+**Important Notes:**
 - The production image already runs a build step. You generally do not need to run `npm run build` on the host when using the Docker stack.
-- `migrate:dev` is intended for local development on the host. Do not use it inside containers; prefer compiled migrations for production-like environments.
+- **Migrations with Docker**: Use `npm run migrate` (compiled) commands when running with Docker containers
+- **Migrations for local development**: Use `npm run migrate:dev` (TypeScript) commands only when running the API directly on the host
 
 #### Option 2: Local Development
 
@@ -210,11 +232,12 @@ npm run dev          # Start development server with hot reload
 npm run build        # Build for production
 npm start            # Start production server
 
-# Database
-npm run migrate:dev up   # Run pending migrations directly from TypeScript (dev only)
-npm run migrate up   # Run all pending migrations
-npm run migrate down # Rollback last migration
-npm run migrate status # Check migration status
+# Database Migrations
+npm run migrate:dev up     # Run pending migrations (TypeScript - local dev only)
+npm run migrate:dev status # Check migration status (TypeScript - local dev only)
+npm run migrate up         # Run pending migrations (compiled - Docker/production)
+npm run migrate down       # Rollback last migration (compiled)
+npm run migrate status     # Check migration status (compiled)
 
 # Code Quality
 npm run lint         # Run ESLint
@@ -229,7 +252,7 @@ npm run test:coverage # Run tests with coverage
 ```bash
 # Development environment (Compose uses root .env)
 npm run dc:up                      # Start all services
-npm run dc:logs -- alutrip-backend-api  # View API logs
+npm run dc:logs -- alutrip-backend  # View API logs
 npm run dc:ps                      # List running services
 npm run dc:down                    # Stop services
 
