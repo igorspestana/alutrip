@@ -43,7 +43,7 @@ The project follows a hybrid architecture with independent backend and frontend:
 - **Validation**: Zod schemas
 - **Logging**: Winston
 - **Queue**: Bull/BullMQ
-- **PDF**: Puppeteer
+- **PDF**: PDFMake
 
 ### Frontend
 - **Framework**: React 19.1 + TypeScript

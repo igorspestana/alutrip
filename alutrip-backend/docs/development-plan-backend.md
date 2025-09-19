@@ -32,7 +32,7 @@ AluTrip is an open-source travel planning assistant that revolutionizes how peop
 - Asynchronous processing for itinerary creation ✅
 - Queue system implementation ✅
 - **Hybrid processing system** (queue + fallback) ✅
-- **PDF generation with Puppeteer** ✅
+- **PDF generation with PDFMake** ✅
 - **Background job processing** ✅
 - **4 API endpoints** fully functional ✅
 
@@ -60,7 +60,7 @@ AluTrip is an open-source travel planning assistant that revolutionizes how peop
 - [x] Asynchronous processing for itinerary creation
 - [x] Queue system implementation
 - [x] Hybrid processing system (queue + fallback)
-- [x] PDF generation with Puppeteer
+- [x] PDF generation with PDFMake
 - [x] Background job processing with Bull/BullMQ
 - [x] Itinerary status tracking and monitoring
 
@@ -96,7 +96,7 @@ AluTrip is an open-source travel planning assistant that revolutionizes how peop
 - **Framework**: Express.js
 - **Database**: PostgreSQL (primary) + Redis (cache & rate limiting)
 - **AI Integration**: Groq + Google Gemini (multiple providers)
-- **PDF Generation**: puppeteer, jsPDF, or similar
+- **PDF Generation**: PDFMake
 - **HTTP Client**: Axios (for external API requests)
 - **Validation**: Zod (schema validation)
 - **Logging**: Winston (structured logging)
@@ -321,7 +321,7 @@ CREATE INDEX idx_rate_limits_window_start ON rate_limits(window_start);
 - ✅ **Testing:** Automated test scripts (bash) for endpoint testing
 - ✅ **Documentation:** API documentation with JSDoc comments and Swagger UI at /docs
 - ✅ **Docker:** Full containerization with Docker Compose
-- ✅ **PDF Generation:** Puppeteer-based PDF creation for itineraries
+- ✅ **PDF Generation:** PDFMake-based PDF creation for itineraries
 - ✅ **Queue System:** Bull/BullMQ for asynchronous processing
 - ✅ **Hybrid Processing:** Queue + fallback system for reliability
 - ✅ **Background Jobs:** Itinerary generation with status tracking
@@ -612,7 +612,7 @@ try {
 # Backend dependencies (Independent Project)
 cd alutrip-backend
 npm init -y
-npm install axios winston express redis pg helmet cors compression dotenv zod groq-sdk @google/generative-ai puppeteer bull ioredis express-rate-limit
+npm install axios winston express redis pg helmet cors compression dotenv zod groq-sdk @google/generative-ai pdfmake bull ioredis express-rate-limit
 
 # Backend development dependencies
 npm install -D @types/node @types/express @types/pg @types/cors @types/compression typescript jest @types/jest supertest @types/supertest eslint prettier @types/bull tsx
@@ -652,7 +652,7 @@ npm install -D @types/node @types/express @types/pg @types/cors @types/compressi
     "express-rate-limit": "^7.1.0",
     "@google/generative-ai": "^0.3.0",
     "groq-sdk": "^0.3.0",
-    "puppeteer": "^21.0.0",
+    "pdfmake": "^0.2.0",
     "bull": "^4.12.0",
     "zod": "^3.22.0"
   },
@@ -886,7 +886,7 @@ cd alutrip-backend
 - [x] Implement status tracking for async processing
 
 **PDF Generation System**
-- [x] Setup PDF generation service using Puppeteer
+- [x] Setup PDF generation service using PDFMake
 - [x] Create professional itinerary templates
 - [x] Implement PDF styling and formatting
 - [x] Add PDF storage and file management
@@ -1013,6 +1013,6 @@ cd alutrip-backend
 - **Caching**: Strategic caching of AI responses and common queries ✅
 - **Hybrid Processing**: Queue + fallback system for reliability ✅
 - **Background Jobs**: Itinerary generation with status tracking ✅
-- **PDF Generation**: Puppeteer-based document creation ✅
+- **PDF Generation**: PDFMake-based document creation ✅
 
 

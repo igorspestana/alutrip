@@ -1,23 +1,33 @@
 // Mocks must be declared before imports
-jest.mock('puppeteer', () => ({
-  __esModule: true,
-  default: {
-    launch: jest.fn()
-  }
-}));
+const mockCreatePdfKitDocument = jest.fn();
+const mockPrinterConstructor = jest.fn();
+
+jest.mock('pdfmake', () => {
+  return {
+    __esModule: true,
+    default: mockPrinterConstructor
+  };
+});
+
 const fsPromisesMock = {
   access: jest.fn(),
   mkdir: jest.fn(),
   unlink: jest.fn(),
   stat: jest.fn()
 };
+
+const createWriteStreamMock = jest.fn();
+
 jest.mock('fs', () => ({
   __esModule: true,
-  default: { promises: fsPromisesMock, constants: { F_OK: 0 } },
+  default: { promises: fsPromisesMock, constants: { F_OK: 0 }, createWriteStream: createWriteStreamMock },
   promises: fsPromisesMock,
-  constants: { F_OK: 0 }
+  constants: { F_OK: 0 },
+  createWriteStream: createWriteStreamMock
 }));
+
 jest.mock('path');
+
 jest.mock('../../src/config/logger', () => ({
   logger: {
     info: jest.fn(),
@@ -27,6 +37,7 @@ jest.mock('../../src/config/logger', () => ({
   },
   logRateLimit: jest.fn()
 }));
+
 jest.mock('../../src/config/env', () => ({
   config: {
     PDF_STORAGE_PATH: './pdfs',
@@ -34,93 +45,110 @@ jest.mock('../../src/config/env', () => ({
     LOG_DIR: './logs'
   }
 }));
+
 import { PDFService } from '../../src/services/pdf.service';
 import { logger } from '../../src/config/logger';
 import { config } from '../../src/config/env';
-import 'puppeteer';
+// PdfPrinter import not needed since we mock it
 import fs from 'fs';
 import path from 'path';
 import {
   mockItinerary,
-  mockPuppeteerBrowser,
-  mockPuppeteerPage,
-  mockPDFBuffer,
   validPDFPath,
   invalidPDFPath,
   pdfGenerationErrors
 } from '../fixtures/pdf.fixtures';
+
 const mockedFs = (fs as any).promises as jest.Mocked<typeof fsPromisesMock>;
 const mockedPath = path as jest.Mocked<typeof path>;
 const mockedLogger = logger as jest.Mocked<typeof logger>;
 const mockConfig = config as jest.Mocked<typeof config>;
+
 // Mock config values (redundant with factory, but explicit in tests)
 mockConfig.PDF_STORAGE_PATH = './pdfs';
 mockConfig.PDF_TIMEOUT = 300000;
+
 describe('PDFService', () => {
-  let mockBrowser: any;
-  let mockPage: any;
+  let mockPdfDoc: any;
+  let mockWriteStream: any;
+
   beforeEach(() => {
     jest.clearAllMocks();
-    // Setup mocks
-    mockPage = { ...mockPuppeteerPage };
-    mockBrowser = {
-      ...mockPuppeteerBrowser,
-      newPage: jest.fn().mockResolvedValue(mockPage),
-      on: jest.fn()
+    
+    // Setup mock write stream
+    mockWriteStream = {
+      on: jest.fn().mockImplementation((event: string, callback: (error?: Error) => void) => {
+        if (event === 'finish') {
+          setTimeout(callback, 10); // Simulate async completion
+        }
+        return mockWriteStream;
+      })
     };
-    // Patch internal getBrowser to avoid real puppeteer
-    (PDFService as any).getBrowser = jest.fn().mockResolvedValue(mockBrowser);
+
+    // Setup mock PDF document
+    mockPdfDoc = {
+      pipe: jest.fn().mockReturnValue(mockWriteStream),
+      end: jest.fn()
+    };
+
+    // Setup mock createPdfKitDocument to return our mock document
+    mockCreatePdfKitDocument.mockReturnValue(mockPdfDoc);
+    
+    // Mock the PdfPrinter constructor to return an object with createPdfKitDocument
+    mockPrinterConstructor.mockImplementation(() => ({
+      createPdfKitDocument: mockCreatePdfKitDocument
+    }));
+
+    // Mock fs.createWriteStream
+    createWriteStreamMock.mockReturnValue(mockWriteStream as any);
+
     // Mock path operations
     mockedPath.join.mockImplementation((...segments: string[]) => segments.join('/'));
     mockedPath.resolve.mockImplementation((...segments: string[]) => '/' + segments.join('/'));
   });
+
   describe('generateItineraryPDF', () => {
-    const generatedContent = mockItinerary.generated_content;
-    it('should generate PDF successfully', async() => {
+    const generatedContent = mockItinerary.generated_content!;
+
+    it('should generate PDF successfully', async () => {
       mockedFs.access.mockRejectedValue(new Error('not found'));
       mockedFs.mkdir.mockResolvedValue(undefined as any);
-      mockPage.pdf.mockResolvedValue(mockPDFBuffer);
+
       const result = await PDFService.generateItineraryPDF(mockItinerary, generatedContent);
+
       expect(result).toEqual({
         filename: expect.stringMatching(/^itinerary_paris_france_1_\d+\.pdf$/),
         filepath: expect.stringContaining('./pdfs/itinerary_paris_france_1_')
       });
-      expect(mockPage.setContent).toHaveBeenCalled();
-      expect(mockPage.pdf).toHaveBeenCalled();
-      expect(mockPage.close).toHaveBeenCalled();
+      expect(mockCreatePdfKitDocument).toHaveBeenCalled();
+      expect(mockPdfDoc.pipe).toHaveBeenCalledWith(mockWriteStream);
+      expect(mockPdfDoc.end).toHaveBeenCalled();
     });
 
-    it('should handle browser launch failure', async() => {
-      (PDFService as any).getBrowser.mockRejectedValueOnce(new Error(pdfGenerationErrors.puppeteerLaunchError));
-      // Act & Assert
-      await expect(
-        PDFService.generateItineraryPDF(mockItinerary, generatedContent)
-      ).rejects.toThrow('Failed to generate PDF: Failed to launch browser');
-    });
-
-    it('should handle PDF generation failure', async() => {
+    it('should handle PDF generation failure', async () => {
       mockedFs.access.mockResolvedValue(undefined as any);
-      mockPage.pdf.mockRejectedValue(new Error(pdfGenerationErrors.contentGenerationError));
-      // Act & Assert
+      mockCreatePdfKitDocument.mockImplementation(() => {
+        throw new Error(pdfGenerationErrors.contentGenerationError);
+      });
+
       await expect(
         PDFService.generateItineraryPDF(mockItinerary, generatedContent)
       ).rejects.toThrow('Failed to generate PDF: Failed to generate PDF content');
-      expect(mockPage.close).toHaveBeenCalled();
     });
 
-    it('should handle directory creation error', async() => {
+    it('should handle directory creation error', async () => {
       mockedFs.access.mockRejectedValue(new Error('missing'));
       mockedFs.mkdir.mockRejectedValueOnce(new Error('Permission denied'));
-      // Act & Assert
+
       await expect(
         PDFService.generateItineraryPDF(mockItinerary, generatedContent)
       ).rejects.toThrow('Failed to generate PDF: Permission denied');
     });
 
-    it('should generate unique filenames for concurrent requests', async() => {
+    it('should generate unique filenames for concurrent requests', async () => {
       mockedFs.access.mockRejectedValue(new Error('not found'));
       mockedFs.mkdir.mockResolvedValue(undefined as any);
-      mockPage.pdf.mockResolvedValue(mockPDFBuffer);
+
       const originalNow = Date.now;
       let ts = 1000000000000;
       (Date as any).now = () => ts++;
@@ -137,10 +165,31 @@ describe('PDFService', () => {
         (Date as any).now = originalNow;
       }
     });
+
+    it('should handle write stream errors', async () => {
+      mockedFs.access.mockResolvedValue(undefined as any);
+      
+      // Create a new mock write stream that emits error
+      const errorWriteStream = {
+        on: jest.fn().mockImplementation((event: string, callback: (error?: Error) => void) => {
+          if (event === 'error') {
+            setTimeout(() => callback(new Error('Write failed')), 10);
+          }
+          return errorWriteStream;
+        })
+      };
+      
+      // Mock fs.createWriteStream to return the error stream
+      createWriteStreamMock.mockReturnValue(errorWriteStream as any);
+
+      await expect(
+        PDFService.generateItineraryPDF(mockItinerary, generatedContent)
+      ).rejects.toThrow('Failed to generate PDF: Write failed');
+    });
   });
 
   describe('pdfExists', () => {
-    it('should return true for existing PDF files', async() => {
+    it('should return true for existing PDF files', async () => {
       mockedFs.access.mockResolvedValue(undefined as any);
       const exists = await PDFService.pdfExists(validPDFPath);
 
@@ -148,7 +197,7 @@ describe('PDFService', () => {
       expect(mockedFs.access).toHaveBeenCalledWith(validPDFPath);
     });
 
-    it('should return false for non-existent files', async() => {
+    it('should return false for non-existent files', async () => {
       mockedFs.access.mockRejectedValue(new Error('File not found'));
       const exists = await PDFService.pdfExists(invalidPDFPath);
 
@@ -157,7 +206,7 @@ describe('PDFService', () => {
   });
 
   describe('deletePDF', () => {
-    it('should delete existing PDF file without throwing', async() => {
+    it('should delete existing PDF file without throwing', async () => {
       mockedFs.unlink.mockResolvedValue(undefined as any);
       await PDFService.deletePDF(validPDFPath);
 
@@ -165,7 +214,7 @@ describe('PDFService', () => {
       expect(mockedFs.unlink).toHaveBeenCalledWith(validPDFPath);
     });
 
-    it('should swallow deletion errors and warn', async() => {
+    it('should swallow deletion errors and warn', async () => {
       mockedFs.unlink.mockRejectedValue(new Error('Permission denied'));
       await PDFService.deletePDF(validPDFPath);
 
@@ -175,208 +224,167 @@ describe('PDFService', () => {
       );
     });
   });
-  describe('HTML template generation basics', () => {
-    it('should generate proper HTML content', async() => {
-      mockedFs.access.mockRejectedValue(new Error('not found'));
-      mockedFs.mkdir.mockResolvedValue(undefined as any);
-      mockPage.pdf.mockResolvedValue(mockPDFBuffer);
-      await PDFService.generateItineraryPDF(mockItinerary, mockItinerary.generated_content);
-      const setContentCall = mockPage.setContent.mock.calls[0][0];
-      expect(setContentCall).toContain('<!DOCTYPE html>');
-      expect(setContentCall).toContain(mockItinerary.destination);
-      expect(setContentCall).toContain('15/03/2024');
-      expect(setContentCall).toContain('18/03/2024');
-    });
-  });
-  describe('getBrowser integration tests', () => {
-    beforeEach(() => {
-      // Reset browser instance before each test
-      (PDFService as any).browser = null;
-      jest.clearAllMocks();
-      // Mock getBrowser to use real puppeteer.launch but with our mocked browser
-      (PDFService as any).getBrowser = jest.fn().mockImplementation(async() => {
-        if (!(PDFService as any).browser) {
-          const mockBrowserInstance = {
-            ...mockPuppeteerBrowser,
-            on: jest.fn(),
-            newPage: jest.fn().mockResolvedValue({
-              ...mockPuppeteerPage,
-              pdf: jest.fn().mockResolvedValue(mockPDFBuffer)
-            })
-          };
-          (PDFService as any).browser = mockBrowserInstance;
-        }
-        return (PDFService as any).browser;
-      });
-    });
-    it('should create new browser instance through generateItineraryPDF', async() => {
-      mockedFs.access.mockRejectedValue(new Error('not found'));
-      mockedFs.mkdir.mockResolvedValue(undefined as any);
-      await PDFService.generateItineraryPDF(mockItinerary, mockItinerary.generated_content);
-      // Verify that getBrowser was called and browser instance was created
-      expect((PDFService as any).getBrowser).toHaveBeenCalled();
-      expect((PDFService as any).browser).toBeDefined();
-    });
-    it('should handle browser disconnection through healthCheck', async() => {
-      await PDFService.healthCheck();
-      // Verify that healthCheck works and browser instance was created
-      expect((PDFService as any).getBrowser).toHaveBeenCalled();
-      expect((PDFService as any).browser).toBeDefined();
-    });
-    it('should handle browser creation failure in generateItineraryPDF', async() => {
-      // Mock getBrowser to throw an error
-      (PDFService as any).getBrowser = jest.fn().mockRejectedValue(new Error('Failed to launch browser'));
-      mockedFs.access.mockRejectedValue(new Error('not found'));
-      mockedFs.mkdir.mockResolvedValue(undefined as any);
-      await expect(
-        PDFService.generateItineraryPDF(mockItinerary, mockItinerary.generated_content)
-      ).rejects.toThrow('Failed to generate PDF: Failed to launch browser');
-    });
-  });
+
   describe('getPDFSize', () => {
-    it('should return file size for existing PDF', async() => {
+    it('should return file size for existing PDF', async () => {
       const mockStats = { size: 250000 };
       mockedFs.stat.mockResolvedValue(mockStats as never);
       const size = await PDFService.getPDFSize(validPDFPath);
+
       expect(size).toBe(250000);
       expect(mockedFs.stat).toHaveBeenCalledWith(validPDFPath);
     });
-    it('should return 0 for non-existent file', async() => {
+
+    it('should return 0 for non-existent file', async () => {
       mockedFs.stat.mockRejectedValue(new Error('File not found'));
       const size = await PDFService.getPDFSize(invalidPDFPath);
+
       expect(size).toBe(0);
     });
-    it('should return 0 when fs.stat throws any error', async() => {
+
+    it('should return 0 when fs.stat throws any error', async () => {
       mockedFs.stat.mockRejectedValue(new Error('Permission denied'));
       const size = await PDFService.getPDFSize(validPDFPath);
+
       expect(size).toBe(0);
     });
   });
+
   describe('closeBrowser', () => {
-    it('should close existing browser instance', async() => {
-      const mockBrowserInstance = {
-        close: jest.fn().mockResolvedValue(undefined)
-      };
-      (PDFService as any).browser = mockBrowserInstance;
+    it('should log cleanup message (PDFMake compatibility)', async () => {
       await PDFService.closeBrowser();
-      expect(mockBrowserInstance.close).toHaveBeenCalled();
-      expect((PDFService as any).browser).toBeNull();
+
       expect(mockedLogger.info).toHaveBeenCalledWith(
-        'Closing Puppeteer browser',
+        'PDF service cleanup called (PDFMake - no browser to close)',
         { context: 'pdf' }
       );
     });
-    it('should do nothing when no browser instance exists', async() => {
-      (PDFService as any).browser = null;
-      await PDFService.closeBrowser();
-      expect(mockedLogger.info).not.toHaveBeenCalled();
+  });
+
+  describe('healthCheck', () => {
+    it('should return healthy status when PDF generation works', async () => {
+      const result = await PDFService.healthCheck();
+
+      expect(result).toEqual({ status: 'healthy' });
+      expect(mockCreatePdfKitDocument).toHaveBeenCalled();
     });
-    it('should handle browser close errors', async() => {
-      const mockBrowserInstance = {
-        close: jest.fn().mockRejectedValue(new Error('Close failed'))
-      };
-      (PDFService as any).browser = mockBrowserInstance;
-      await expect(PDFService.closeBrowser()).rejects.toThrow('Close failed');
-      // Browser should remain set when close fails (not nullified)
-      expect((PDFService as any).browser).toBe(mockBrowserInstance);
+
+    it('should return unhealthy status when PDF document creation fails', async () => {
+      mockCreatePdfKitDocument.mockImplementation(() => {
+        throw new Error('PDF creation failed');
+      });
+
+      const result = await PDFService.healthCheck();
+
+      expect(result).toEqual({
+        status: 'unhealthy',
+        error: 'PDF creation failed'
+      });
+    });
+
+    it('should return unhealthy status when PDF document is null', async () => {
+      mockCreatePdfKitDocument.mockReturnValue(null);
+
+      const result = await PDFService.healthCheck();
+
+      expect(result).toEqual({
+        status: 'unhealthy',
+        error: 'PDF document creation returned null'
+      });
     });
   });
-  describe('healthCheck', () => {
-    beforeEach(() => {
-      (PDFService as any).browser = null;
-      jest.clearAllMocks();
-      // Mock getBrowser for healthCheck tests
-      (PDFService as any).getBrowser = jest.fn().mockImplementation(async() => {
-        if (!(PDFService as any).browser) {
-          const mockBrowserInstance = {
-            ...mockPuppeteerBrowser,
-            on: jest.fn(),
-            newPage: jest.fn().mockResolvedValue({
-              setContent: jest.fn().mockResolvedValue(undefined),
-              pdf: jest.fn().mockResolvedValue(mockPDFBuffer),
-              close: jest.fn().mockResolvedValue(undefined)
+
+  describe('parseItineraryContent', () => {
+    it('should parse content into structured sections', async () => {
+      const content = `
+Dia 1: Paris
+Manhã: Visita à Torre Eiffel
+- Chegar cedo para evitar multidões
+- Comprar ingressos online
+Tarde: Museu do Louvre
+`;
+
+      mockedFs.access.mockResolvedValue(undefined as any);
+      await PDFService.generateItineraryPDF(mockItinerary, content);
+
+      const docDefinition = mockCreatePdfKitDocument.mock.calls[0][0];
+      expect(docDefinition.content).toBeDefined();
+      expect(Array.isArray(docDefinition.content)).toBe(true);
+    });
+  });
+
+  describe('document definition structure', () => {
+    it('should create proper document definition with all required sections', async () => {
+      mockedFs.access.mockResolvedValue(undefined as any);
+      await PDFService.generateItineraryPDF(mockItinerary, 'Test content');
+
+      const docDefinition = mockCreatePdfKitDocument.mock.calls[0][0];
+      
+      expect(docDefinition).toMatchObject({
+        styles: expect.objectContaining({
+          title: expect.any(Object),
+          subtitle: expect.any(Object),
+          sectionHeader: expect.any(Object)
+        }),
+        defaultStyle: expect.objectContaining({
+          font: 'Roboto'
+        }),
+        pageSize: 'A4',
+        info: expect.objectContaining({
+          title: expect.stringContaining(mockItinerary.destination),
+          author: 'AluTrip'
+        })
+      });
+    });
+
+    it('should include budget information when provided', async () => {
+      const itineraryWithBudget = { ...mockItinerary, budget: 5000 };
+      mockedFs.access.mockResolvedValue(undefined as any);
+      
+      await PDFService.generateItineraryPDF(itineraryWithBudget, 'Test content');
+
+      expect(mockCreatePdfKitDocument).toHaveBeenCalledWith(
+        expect.objectContaining({
+          content: expect.arrayContaining([
+            expect.objectContaining({
+              stack: expect.arrayContaining([
+                expect.objectContaining({
+                  text: expect.arrayContaining([
+                    expect.objectContaining({
+                      text: expect.stringContaining('5,000')
+                    })
+                  ])
+                })
+              ])
             })
-          };
-          (PDFService as any).browser = mockBrowserInstance;
-        }
-        return (PDFService as any).browser;
-      });
+          ])
+        })
+      );
     });
-    it('should return healthy status when PDF generation works', async() => {
-      const result = await PDFService.healthCheck();
-      expect(result).toEqual({ status: 'healthy' });
-      expect((PDFService as any).browser.newPage).toHaveBeenCalled();
-    });
-    it('should return unhealthy status when PDF is empty', async() => {
-      // Mock page to return empty PDF
-      (PDFService as any).getBrowser = jest.fn().mockImplementation(async() => {
-        if (!(PDFService as any).browser) {
-          const mockBrowserInstance = {
-            ...mockPuppeteerBrowser,
-            on: jest.fn(),
-            newPage: jest.fn().mockResolvedValue({
-              setContent: jest.fn().mockResolvedValue(undefined),
-              pdf: jest.fn().mockResolvedValue(Buffer.alloc(0)), // Empty buffer
-              close: jest.fn().mockResolvedValue(undefined)
+
+    it('should include interests when provided', async () => {
+      const itineraryWithInterests = { ...mockItinerary, interests: ['cultura', 'gastronomia'] };
+      mockedFs.access.mockResolvedValue(undefined as any);
+      
+      await PDFService.generateItineraryPDF(itineraryWithInterests, 'Test content');
+
+      expect(mockCreatePdfKitDocument).toHaveBeenCalledWith(
+        expect.objectContaining({
+          content: expect.arrayContaining([
+            expect.objectContaining({
+              stack: expect.arrayContaining([
+                expect.objectContaining({
+                  text: expect.arrayContaining([
+                    expect.objectContaining({
+                      text: expect.stringContaining('cultura, gastronomia')
+                    })
+                  ])
+                })
+              ])
             })
-          };
-          (PDFService as any).browser = mockBrowserInstance;
-        }
-        return (PDFService as any).browser;
-      });
-      const result = await PDFService.healthCheck();
-      expect(result).toEqual({
-        status: 'unhealthy',
-        error: 'PDF generation returned empty result'
-      });
-    });
-    it('should return unhealthy status when browser fails', async() => {
-      (PDFService as any).getBrowser = jest.fn().mockRejectedValue(new Error('Browser launch failed'));
-      const result = await PDFService.healthCheck();
-      expect(result).toEqual({
-        status: 'unhealthy',
-        error: 'Browser launch failed'
-      });
-    });
-    it('should return unhealthy status when page creation fails', async() => {
-      (PDFService as any).getBrowser = jest.fn().mockImplementation(async() => {
-        if (!(PDFService as any).browser) {
-          const mockBrowserInstance = {
-            ...mockPuppeteerBrowser,
-            newPage: jest.fn().mockRejectedValue(new Error('Page creation failed')),
-            on: jest.fn()
-          };
-          (PDFService as any).browser = mockBrowserInstance;
-        }
-        return (PDFService as any).browser;
-      });
-      const result = await PDFService.healthCheck();
-      expect(result).toEqual({
-        status: 'unhealthy',
-        error: 'Page creation failed'
-      });
-    });
-    it('should return unhealthy status when PDF generation fails', async() => {
-      (PDFService as any).getBrowser = jest.fn().mockImplementation(async() => {
-        if (!(PDFService as any).browser) {
-          const mockBrowserInstance = {
-            ...mockPuppeteerBrowser,
-            on: jest.fn(),
-            newPage: jest.fn().mockResolvedValue({
-              setContent: jest.fn().mockResolvedValue(undefined),
-              pdf: jest.fn().mockRejectedValue(new Error('PDF generation failed')),
-              close: jest.fn().mockResolvedValue(undefined)
-            })
-          };
-          (PDFService as any).browser = mockBrowserInstance;
-        }
-        return (PDFService as any).browser;
-      });
-      const result = await PDFService.healthCheck();
-      expect(result).toEqual({
-        status: 'unhealthy',
-        error: 'PDF generation failed'
-      });
+          ])
+        })
+      );
     });
   });
 });

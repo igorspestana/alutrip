@@ -151,7 +151,7 @@ AluTrip follows a **hybrid architecture** pattern with independent backend and f
 
 #### PDF Generation
 **Technology:**
-- Puppeteer for HTML-to-PDF conversion
+- PDFMake for programmatic PDF creation
 - Professional templates
 - Responsive design
 - File storage management
