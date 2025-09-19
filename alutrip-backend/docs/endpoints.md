@@ -63,6 +63,93 @@ Check API health status.
 - `200 OK`: API is healthy
 - `503 Service Unavailable`: API is unhealthy
 
+### GET /health/detailed
+Get detailed system information including dependencies status.
+
+**Response:**
+```json
+{
+  "status": "success",
+  "message": "Detailed health information retrieved successfully",
+  "data": {
+    "timestamp": "2024-01-15T10:30:00Z",
+    "version": "1.0.0",
+    "environment": "development",
+    "uptime": 3600,
+    "dependencies": {
+      "database": {
+        "status": "healthy",
+        "responseTime": "15ms"
+      },
+      "redis": {
+        "status": "healthy",
+        "responseTime": "5ms"
+      },
+      "ai_services": {
+        "groq": {
+          "status": "healthy",
+          "available": true
+        },
+        "gemini": {
+          "status": "healthy",
+          "available": true
+        }
+      }
+    },
+    "system": {
+      "memory": {
+        "used": "45%",
+        "free": "55%"
+      },
+      "cpu": {
+        "usage": "12%"
+      }
+    }
+  }
+}
+```
+
+**Status Codes:**
+- `200 OK`: Detailed health information retrieved
+- `500 Internal Server Error`: Failed to retrieve detailed health information
+
+### GET /health/ready
+Kubernetes readiness probe endpoint.
+
+**Response:**
+```json
+{
+  "status": "success",
+  "message": "Application is ready",
+  "data": {
+    "ready": true,
+    "timestamp": "2024-01-15T10:30:00Z"
+  }
+}
+```
+
+**Status Codes:**
+- `200 OK`: Application is ready to serve traffic
+- `503 Service Unavailable`: Application is not ready
+
+### GET /health/live
+Kubernetes liveness probe endpoint.
+
+**Response:**
+```json
+{
+  "status": "success",
+  "message": "Application is alive",
+  "data": {
+    "alive": true,
+    "timestamp": "2024-01-15T10:30:00Z"
+  }
+}
+```
+
+**Status Codes:**
+- `200 OK`: Application is alive
+
 ---
 
 ## Travel Q&A Endpoints (AluTrip Responde)
@@ -101,6 +188,7 @@ Submit a travel question and receive an AI-generated response.
 - `200 OK`: Question answered successfully
 - `400 Bad Request`: Invalid input data
 - `429 Too Many Requests`: Rate limit exceeded
+- `503 Service Unavailable`: AI service temporarily unavailable
 - `500 Internal Server Error`: AI service error
 
 **Rate Limiting:**
@@ -168,6 +256,95 @@ Get a specific travel question and response.
 - `200 OK`: Question retrieved successfully
 - `404 Not Found`: Question not found
 - `400 Bad Request`: Invalid question ID
+
+### GET /api/travel/models/health
+Check the health and availability of AI models (Groq and Gemini).
+
+**Response:**
+```json
+{
+  "status": "success",
+  "message": "AI models health check completed - healthy",
+  "data": {
+    "groq": {
+      "status": "healthy",
+      "available": true,
+      "model": "llama-3.1-70b-versatile",
+      "error": null
+    },
+    "gemini": {
+      "status": "healthy",
+      "available": true,
+      "model": "gemini-1.5-pro",
+      "error": null
+    },
+    "overall": "healthy"
+  }
+}
+```
+
+**Status Codes:**
+- `200 OK`: All AI models are healthy
+- `206 Partial Content`: Some AI models are healthy (partial availability)
+- `503 Service Unavailable`: All AI models are unhealthy
+- `500 Internal Server Error`: Failed to check AI models health
+
+### GET /api/travel/stats
+Retrieve statistics about processed travel questions.
+
+**Response:**
+```json
+{
+  "status": "success",
+  "message": "Travel questions statistics retrieved successfully",
+  "data": {
+    "total": 150,
+    "today": 5,
+    "byModel": {
+      "groq": 120,
+      "gemini": 30
+    },
+    "avgResponseLength": 450
+  }
+}
+```
+
+**Status Codes:**
+- `200 OK`: Statistics retrieved successfully
+- `500 Internal Server Error`: Internal server error
+
+### GET /api/travel/history
+Retrieve travel question history for the current client (based on IP address).
+
+**Query Parameters:**
+- `limit` (number, optional): Number of questions to return (default: 10, max: 50)
+- `offset` (number, optional): Number of questions to skip (default: 0)
+
+**Response:**
+```json
+{
+  "status": "success",
+  "message": "Client travel history retrieved successfully",
+  "data": {
+    "questions": [
+      {
+        "id": 123,
+        "question": "What's the best time to visit Japan?",
+        "response": "The best time to visit Japan is during spring...",
+        "model_used": "groq",
+        "created_at": "2024-01-15T10:30:00Z"
+      }
+    ],
+    "clientIp": "192.168.1.1",
+    "total": 3
+  }
+}
+```
+
+**Status Codes:**
+- `200 OK`: Client history retrieved successfully
+- `400 Bad Request`: Invalid query parameters
+- `500 Internal Server Error`: Internal server error
 
 ---
 
@@ -311,40 +488,76 @@ List recent itineraries (for future features).
 - `200 OK`: Itineraries retrieved successfully
 - `400 Bad Request`: Invalid query parameters
 
----
-
-## Rate Limiting Endpoints
-
-### GET /api/limits/status
-Check current rate limit status for the requesting IP.
+### GET /api/itinerary/stats
+Retrieve statistics about itinerary generation (total count, by status, processing times).
 
 **Response:**
 ```json
 {
   "status": "success",
-  "message": "Rate limit status retrieved successfully",
+  "message": "Itinerary statistics retrieved successfully",
   "data": {
-    "ip": "192.168.1.100",
-    "limits": {
-      "travel_questions": {
-        "used": 3,
-        "limit": 5,
-        "remaining": 2,
-        "reset_time": "2024-01-16T10:30:00Z"
-      },
-      "itineraries": {
-        "used": 1,
-        "limit": 5,
-        "remaining": 4,
-        "reset_time": "2024-01-16T10:30:00Z"
+    "total": 150,
+    "today": 5,
+    "byStatus": {
+      "pending": 2,
+      "processing": 1,
+      "completed": 140,
+      "failed": 7
+    },
+    "byModel": {
+      "groq": 120,
+      "gemini": 30
+    },
+    "avgProcessingTime": 180,
+    "avgProcessingTimeFormatted": "3 minutes"
+  }
+}
+```
+
+**Status Codes:**
+- `200 OK`: Statistics retrieved successfully
+- `500 Internal Server Error`: Internal server error
+
+### GET /api/itinerary/history
+Retrieve itinerary history for the current client (based on IP address).
+
+**Query Parameters:**
+- `limit` (number, optional): Number of itineraries to return (default: 10, max: 50)
+- `offset` (number, optional): Number of itineraries to skip (default: 0)
+
+**Response:**
+```json
+{
+  "status": "success",
+  "message": "Client itinerary history retrieved successfully",
+  "data": {
+    "client_ip": "192.168.1.100",
+    "itineraries": [
+      {
+        "id": 456,
+        "destination": "Tokyo, Japan",
+        "start_date": "2024-04-15",
+        "end_date": "2024-04-22",
+        "processing_status": "completed",
+        "created_at": "2024-01-15T10:30:00Z",
+        "pdf_available": true
       }
+    ],
+    "pagination": {
+      "limit": 10,
+      "offset": 0,
+      "total": 3,
+      "has_more": false
     }
   }
 }
 ```
 
 **Status Codes:**
-- `200 OK`: Status retrieved successfully
+- `200 OK`: Client history retrieved successfully
+- `400 Bad Request`: Invalid query parameters
+- `500 Internal Server Error`: Internal server error
 
 ---
 
@@ -521,6 +734,78 @@ Delete a conversation and all its messages.
   }
 }
 ```
+
+---
+
+## Debug and Testing Endpoints
+
+### POST /api/itinerary/process-stuck
+Process itineraries that are stuck in pending status for more than the threshold time.
+
+**Description:** Uses direct processing fallback to complete stuck itineraries that weren't processed by the Bull queue. This is useful for maintenance and debugging purposes.
+
+**Request Body:**
+```json
+{}
+```
+
+**Response:**
+```json
+{
+  "status": "success",
+  "message": "Stuck itineraries processed successfully",
+  "data": {
+    "processed_count": 3,
+    "processed_ids": [123, 124, 125],
+    "processing_time": "45s"
+  }
+}
+```
+
+**Status Codes:**
+- `200 OK`: Stuck itineraries processed successfully
+- `500 Internal Server Error`: Failed to process stuck itineraries
+
+### POST /api/itinerary/create-direct
+**TEST ENDPOINT:** Create itinerary using direct processing (bypasses Bull queue).
+
+**Description:** This endpoint forces immediate processing without using the queue system, useful for testing and debugging. It bypasses the normal asynchronous processing flow.
+
+**Request Body:**
+```json
+{
+  "destination": "Amsterdam, Netherlands",
+  "start_date": "2025-11-15",
+  "end_date": "2025-11-18",
+  "budget": 1200,
+  "interests": ["culture", "art", "food"]
+}
+```
+
+**Response:**
+```json
+{
+  "status": "success",
+  "message": "Itinerary created and processed directly",
+  "data": {
+    "id": 789,
+    "destination": "Amsterdam, Netherlands",
+    "start_date": "2025-11-15",
+    "end_date": "2025-11-18",
+    "processing_status": "completed",
+    "created_at": "2024-01-15T10:30:00Z",
+    "completed_at": "2024-01-15T10:32:00Z",
+    "pdf_available": true,
+    "pdf_filename": "amsterdam_itinerary_789.pdf",
+    "processing_method": "direct"
+  }
+}
+```
+
+**Status Codes:**
+- `200 OK`: Itinerary created and processed successfully
+- `400 Bad Request`: Invalid input data
+- `500 Internal Server Error`: Processing failed
 
 ---
 

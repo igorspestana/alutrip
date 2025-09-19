@@ -5,6 +5,23 @@ WORKDIR /app
 
 COPY package*.json ./
 
+# Install build dependencies needed for native modules (including Puppeteer)
+RUN apk add --no-cache \
+    python3 \
+    make \
+    g++ \
+    chromium \
+    nss \
+    freetype \
+    freetype-dev \
+    harfbuzz \
+    ca-certificates \
+    ttf-freefont
+
+# Set Puppeteer to use system Chromium
+ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true \
+    PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium-browser
+
 # Install dependencies including dev dependencies for build
 RUN npm ci
 
@@ -22,7 +39,28 @@ WORKDIR /app
 
 COPY package*.json ./
 
+# Install dependencies needed for Puppeteer and native modules
+RUN apk add --no-cache \
+    python3 \
+    make \
+    g++ \
+    chromium \
+    nss \
+    freetype \
+    freetype-dev \
+    harfbuzz \
+    ca-certificates \
+    ttf-freefont
+
+# Set Puppeteer to use system Chromium
+ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true \
+    PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium-browser
+
+# Install production dependencies
 RUN npm ci --only=production && npm cache clean --force
+
+# Remove build dependencies to reduce image size
+RUN apk del python3 make g++
 
 COPY --from=builder /app/dist ./dist
 

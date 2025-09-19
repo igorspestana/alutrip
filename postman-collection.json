@@ -1,0 +1,811 @@
+{
+  "info": {
+    "name": "AluTrip Backend API",
+    "description": "Complete collection for testing AluTrip Travel Assistant API endpoints including Travel Q&A and Itinerary Planning features. Includes health checks, rate limiting tests, and validation scenarios.",
+    "version": "2.0.0",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:3000",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "Health Check",
+      "item": [
+        {
+          "name": "Basic Health Check",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/health",
+              "host": ["{{baseUrl}}"],
+              "path": ["health"]
+            },
+            "description": "Basic health check endpoint to verify if the API is running"
+          },
+          "response": []
+        },
+        {
+          "name": "Detailed Health Check",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/health/detailed",
+              "host": ["{{baseUrl}}"],
+              "path": ["health", "detailed"]
+            },
+            "description": "Detailed health check with system information and dependencies status"
+          },
+          "response": []
+        },
+        {
+          "name": "Readiness Probe",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/health/ready",
+              "host": ["{{baseUrl}}"],
+              "path": ["health", "ready"]
+            },
+            "description": "Kubernetes readiness probe endpoint"
+          },
+          "response": []
+        },
+        {
+          "name": "Liveness Probe",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/health/live",
+              "host": ["{{baseUrl}}"],
+              "path": ["health", "live"]
+            },
+            "description": "Kubernetes liveness probe endpoint"
+          },
+          "response": []
+        }
+      ],
+      "description": "Health check endpoints for monitoring and Kubernetes probes"
+    },
+    {
+      "name": "Travel Q&A",
+      "item": [
+        {
+          "name": "Ask Travel Question (Groq)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"question\": \"What's the best time to visit Japan for cherry blossoms?\",\n  \"model\": \"groq\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/travel/ask",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "travel", "ask"]
+            },
+            "description": "Submit a travel question using Groq AI model. Rate limited to 5 requests per 24 hours per IP."
+          },
+          "response": []
+        },
+        {
+          "name": "Ask Travel Question (Gemini)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"question\": \"What are the must-see attractions in Paris?\",\n  \"model\": \"gemini\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/travel/ask",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "travel", "ask"]
+            },
+            "description": "Submit a travel question using Google Gemini AI model. Rate limited to 5 requests per 24 hours per IP."
+          },
+          "response": []
+        },
+        {
+          "name": "Get Specific Question",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/travel/questions/1",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "travel", "questions", "1"]
+            },
+            "description": "Retrieve a specific travel question and its AI-generated response by ID"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Recent Questions",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/travel/questions?limit=10&offset=0",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "travel", "questions"],
+              "query": [
+                {
+                  "key": "limit",
+                  "value": "10",
+                  "description": "Number of questions to return (max 50)"
+                },
+                {
+                  "key": "offset",
+                  "value": "0",
+                  "description": "Number of questions to skip"
+                }
+              ]
+            },
+            "description": "Retrieve recent travel questions with pagination support"
+          },
+          "response": []
+        },
+        {
+          "name": "Check AI Models Health",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/travel/models/health",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "travel", "models", "health"]
+            },
+            "description": "Check the health and availability of AI models (Groq and Gemini)"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Travel Statistics",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/travel/stats",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "travel", "stats"]
+            },
+            "description": "Retrieve statistics about processed travel questions"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Client History",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/travel/history?limit=10&offset=0",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "travel", "history"],
+              "query": [
+                {
+                  "key": "limit",
+                  "value": "10",
+                  "description": "Number of questions to return (max 50)"
+                },
+                {
+                  "key": "offset",
+                  "value": "0",
+                  "description": "Number of questions to skip"
+                }
+              ]
+            },
+            "description": "Retrieve travel question history for the current client (based on IP address)"
+          },
+          "response": []
+        }
+      ],
+      "description": "Travel Q&A endpoints for asking questions and retrieving travel information"
+    },
+    {
+      "name": "Itinerary Planning",
+      "item": [
+        {
+          "name": "Create Itinerary (Valid Request)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"destination\": \"Paris, France\",\n  \"start_date\": \"2025-06-15\",\n  \"end_date\": \"2025-06-18\",\n  \"budget\": 1500,\n  \"interests\": [\"culture\", \"food\", \"art\"]\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/itinerary/create",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "itinerary", "create"]
+            },
+            "description": "Create a new itinerary with complete parameters. Rate limited to 5 requests per 24 hours per IP."
+          },
+          "response": []
+        },
+        {
+          "name": "Create Itinerary (Minimal Request)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"destination\": \"Tokyo, Japan\",\n  \"start_date\": \"2025-09-20\",\n  \"end_date\": \"2025-09-25\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/itinerary/create",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "itinerary", "create"]
+            },
+            "description": "Create a new itinerary with only required parameters (destination and dates)"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Itinerary Status",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/itinerary/1/status",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "itinerary", "1", "status"]
+            },
+            "description": "Get the current status and progress of a specific itinerary by ID"
+          },
+          "response": []
+        },
+        {
+          "name": "Download Itinerary PDF",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/itinerary/1/download",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "itinerary", "1", "download"]
+            },
+            "description": "Download the generated PDF for a completed itinerary"
+          },
+          "response": []
+        },
+        {
+          "name": "List Recent Itineraries",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/itinerary/list?limit=10&offset=0&status=all",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "itinerary", "list"],
+              "query": [
+                {
+                  "key": "limit",
+                  "value": "10",
+                  "description": "Number of itineraries to return (max 50)"
+                },
+                {
+                  "key": "offset",
+                  "value": "0",
+                  "description": "Number of itineraries to skip"
+                },
+                {
+                  "key": "status",
+                  "value": "all",
+                  "description": "Filter by status: all, pending, processing, completed, failed"
+                }
+              ]
+            },
+            "description": "Retrieve recent itineraries with pagination and optional status filtering"
+          },
+          "response": []
+        },
+        {
+          "name": "List Completed Itineraries",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/itinerary/list?limit=5&status=completed",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "itinerary", "list"],
+              "query": [
+                {
+                  "key": "limit",
+                  "value": "5",
+                  "description": "Number of itineraries to return"
+                },
+                {
+                  "key": "status",
+                  "value": "completed",
+                  "description": "Only show completed itineraries"
+                }
+              ]
+            },
+            "description": "Retrieve only completed itineraries"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Itinerary History",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/itinerary/history?limit=10&offset=0",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "itinerary", "history"],
+              "query": [
+                {
+                  "key": "limit",
+                  "value": "10",
+                  "description": "Number of itineraries to return (max 50)"
+                },
+                {
+                  "key": "offset",
+                  "value": "0",
+                  "description": "Number of itineraries to skip"
+                }
+              ]
+            },
+            "description": "Retrieve itinerary history for the current client (based on IP address)"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Itinerary Statistics",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/itinerary/stats",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "itinerary", "stats"]
+            },
+            "description": "Retrieve statistics about itinerary generation (total count, by status, processing times)"
+          },
+          "response": []
+        },
+        {
+          "name": "Process Stuck Itineraries",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/itinerary/process-stuck",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "itinerary", "process-stuck"]
+            },
+            "description": "Process itineraries that are stuck in pending status for more than the threshold time. Uses direct processing fallback to complete stuck itineraries that weren't processed by the Bull queue."
+          },
+          "response": []
+        },
+        {
+          "name": "Create Itinerary (Direct Processing Test)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"destination\": \"Amsterdam, Netherlands\",\n  \"start_date\": \"2025-11-15\",\n  \"end_date\": \"2025-11-18\",\n  \"budget\": 1200,\n  \"interests\": [\"culture\", \"art\", \"food\"]\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/itinerary/create-direct",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "itinerary", "create-direct"]
+            },
+            "description": "TEST ENDPOINT: Create itinerary using direct processing (bypasses Bull queue). This endpoint forces immediate processing without using the queue system, useful for testing and debugging."
+          },
+          "response": []
+        }
+      ],
+      "description": "Itinerary Planning endpoints for creating, managing, and retrieving travel itineraries"
+    },
+    {
+      "name": "Test Scenarios",
+      "item": [
+        {
+          "name": "Rate Limit Test - Multiple Requests",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"question\": \"Test rate limiting - what's the weather like in Tokyo?\",\n  \"model\": \"groq\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/travel/ask",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "travel", "ask"]
+            },
+            "description": "Test rate limiting by making multiple requests (should fail after 5 requests per 24h)"
+          },
+          "response": []
+        },
+        {
+          "name": "Invalid Request - Missing Question",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"model\": \"groq\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/travel/ask",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "travel", "ask"]
+            },
+            "description": "Test validation by sending request without required 'question' field"
+          },
+          "response": []
+        },
+        {
+          "name": "Invalid Request - Invalid Model",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"question\": \"What's the best time to visit Japan?\",\n  \"model\": \"invalid-model\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/travel/ask",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "travel", "ask"]
+            },
+            "description": "Test validation by sending request with invalid model name"
+          },
+          "response": []
+        },
+        {
+          "name": "Question Too Short",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"question\": \"Hi\",\n  \"model\": \"groq\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/travel/ask",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "travel", "ask"]
+            },
+            "description": "Test validation by sending question shorter than minimum length (10 characters)"
+          },
+          "response": []
+        },
+        {
+          "name": "Question Too Long",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"question\": \"This is a very long question that exceeds the maximum allowed length of 1000 characters. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum. Sed ut perspiciatis unde omnis iste natus error sit voluptatem accusantium doloremque laudantium, totam rem aperiam, eaque ipsa quae ab illo inventore veritatis et quasi architecto beatae vitae dicta sunt explicabo. Nemo enim ipsam voluptatem quia voluptas sit aspernatur aut odit aut fugit, sed quia consequuntur magni dolores eos qui ratione voluptatem sequi nesciunt. Neque porro quisquam est, qui dolorem ipsum quia dolor sit amet, consectetur, adipisci velit, sed quia non numquam eius modi tempora incididunt ut labore et dolore magnam aliquam quaerat voluptatem. Ut enim ad minima veniam, quis nostrum exercitationem ullam corporis suscipit laboriosam, nisi ut aliquid ex ea commodi consequatur? Quis autem vel eum iure reprehenderit qui in ea voluptate velit esse quam nihil molestiae consequatur, vel illum qui dolorem eum fugiat quo voluptas nulla pariatur?\",\n  \"model\": \"groq\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/travel/ask",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "travel", "ask"]
+            },
+            "description": "Test validation by sending question longer than maximum length (1000 characters)"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Non-existent Question",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/travel/questions/99999",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "travel", "questions", "99999"]
+            },
+            "description": "Test error handling by requesting a non-existent question ID"
+          },
+          "response": []
+        },
+        {
+          "name": "Itinerary - Rate Limit Test",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"destination\": \"Rome, Italy\",\n  \"start_date\": \"2025-07-01\",\n  \"end_date\": \"2025-07-05\",\n  \"budget\": 2000\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/itinerary/create",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "itinerary", "create"]
+            },
+            "description": "Test rate limiting for itinerary creation (should fail after 5 requests per 24h)"
+          },
+          "response": []
+        },
+        {
+          "name": "Itinerary - Invalid Date Range",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"destination\": \"London, UK\",\n  \"start_date\": \"2025-06-20\",\n  \"end_date\": \"2025-06-15\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/itinerary/create",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "itinerary", "create"]
+            },
+            "description": "Test validation by sending end date before start date"
+          },
+          "response": []
+        },
+        {
+          "name": "Itinerary - Past Date",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"destination\": \"Barcelona, Spain\",\n  \"start_date\": \"2023-01-01\",\n  \"end_date\": \"2023-01-05\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/itinerary/create",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "itinerary", "create"]
+            },
+            "description": "Test validation by sending past dates"
+          },
+          "response": []
+        },
+        {
+          "name": "Itinerary - Trip Too Long",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"destination\": \"Australia\",\n  \"start_date\": \"2025-06-01\",\n  \"end_date\": \"2025-06-10\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/itinerary/create",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "itinerary", "create"]
+            },
+            "description": "Test validation by sending trip longer than 7 days maximum"
+          },
+          "response": []
+        },
+        {
+          "name": "Itinerary - Missing Required Fields",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"destination\": \"Amsterdam, Netherlands\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/itinerary/create",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "itinerary", "create"]
+            },
+            "description": "Test validation by omitting required date fields"
+          },
+          "response": []
+        },
+        {
+          "name": "Itinerary - Invalid Budget",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"destination\": \"New York, USA\",\n  \"start_date\": \"2025-08-01\",\n  \"end_date\": \"2025-08-05\",\n  \"budget\": 50\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/itinerary/create",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "itinerary", "create"]
+            },
+            "description": "Test validation with budget below minimum ($100)"
+          },
+          "response": []
+        },
+        {
+          "name": "Itinerary - Too Many Interests",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"destination\": \"Prague, Czech Republic\",\n  \"start_date\": \"2025-10-01\",\n  \"end_date\": \"2025-10-05\",\n  \"interests\": [\"culture\", \"food\", \"art\", \"music\", \"history\", \"architecture\", \"nightlife\", \"shopping\", \"nature\", \"sports\", \"adventure\"]\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/itinerary/create",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "itinerary", "create"]
+            },
+            "description": "Test validation with more than 10 interests (maximum allowed)"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Non-existent Itinerary",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/itinerary/99999/status",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "itinerary", "99999", "status"]
+            },
+            "description": "Test error handling by requesting a non-existent itinerary ID"
+          },
+          "response": []
+        },
+        {
+          "name": "Download Non-existent PDF",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/itinerary/99999/download",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "itinerary", "99999", "download"]
+            },
+            "description": "Test error handling by trying to download PDF for non-existent itinerary"
+          },
+          "response": []
+        }
+      ],
+      "description": "Test scenarios for validation, error handling, and edge cases"
+    }
+  ],
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "// Add timestamp to requests for tracking",
+          "pm.globals.set('timestamp', new Date().toISOString());"
+        ]
+      }
+    },
+    {
+      "listen": "test",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "// Basic response validation",
+          "pm.test('Response time is less than 30000ms', function () {",
+          "    pm.expect(pm.response.responseTime).to.be.below(30000);",
+          "});",
+          "",
+          "pm.test('Response has valid JSON', function () {",
+          "    pm.response.to.have.jsonBody();",
+          "});",
+          "",
+          "// Check for standard response format",
+          "if (pm.response.json()) {",
+          "    pm.test('Response has status field', function () {",
+          "        pm.expect(pm.response.json()).to.have.property('status');",
+          "    });",
+          "    ",
+          "    pm.test('Response has message field', function () {",
+          "        pm.expect(pm.response.json()).to.have.property('message');",
+          "    });",
+          "}"
+        ]
+      }
+    }
+  ]
+}

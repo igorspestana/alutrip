@@ -10,7 +10,11 @@
     "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
     "lint:fix": "eslint . --ext ts,tsx --fix",
     "format": "prettier --write src",
-    "type-check": "tsc --noEmit"
+    "type-check": "tsc --noEmit",
+    "dc:up": "docker compose -f docker/docker-compose.yml up -d",
+    "dc:down": "docker compose -f docker/docker-compose.yml down",
+    "dc:ps": "docker compose -f docker/docker-compose.yml ps",
+    "dc:logs": "docker compose -f docker/docker-compose.yml logs --tail=100 -f"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.2",
