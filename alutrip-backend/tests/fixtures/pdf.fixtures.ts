@@ -20,7 +20,9 @@ export const mockItinerary: Itinerary = {
   generated_content: `# Roteiro Completo: Paris, França
 
 ## Introdução ao Destino
-Paris, a Cidade Luz, é um dos destinos mais românticos e culturalmente ricos do mundo. Com seus monumentos icônicos, museus de classe mundial e uma gastronomia incomparável, Paris oferece uma experiência única que combina história, arte e sofisticação.
+Paris, a Cidade Luz, é um dos destinos mais românticos e culturalmente ricos do mundo. 
+Com seus monumentos icônicos, museus de classe mundial e uma gastronomia incomparável, 
+Paris oferece uma experiência única que combina história, arte e sofisticação.
 
 ## Informações Práticas
 - **Documentação:** Passaporte válido (brasileiros não precisam de visto para estadia até 90 dias)
@@ -199,7 +201,9 @@ Paris, a Cidade Luz, é um dos destinos mais românticos e culturalmente ricos d
 
 ---
 
-**Bon Voyage!** Este roteiro foi criado para aproveitar o melhor de Paris em 4 dias, considerando seu orçamento de $1,500 USD. Ajuste as atividades conforme suas preferências e aproveite cada momento na Cidade Luz!`,
+**Bon Voyage!** Este roteiro foi criado para aproveitar o melhor de Paris em 4 dias, 
+considerando seu orçamento de $1,500 USD. Ajuste as atividades conforme suas preferências 
+e aproveite cada momento na Cidade Luz!`,
   pdf_filename: 'itinerary_paris_france_1_1234567890.pdf',
   pdf_path: '/app/pdfs/itinerary_paris_france_1_1234567890.pdf',
   model_used: 'groq',
@@ -215,80 +219,8 @@ export const mockPDFInfo = {
   size: 250000 // bytes
 };
 
-// Mock Puppeteer page object
-export const mockPuppeteerPage = {
-  setContent: jest.fn(),
-  pdf: jest.fn(),
-  close: jest.fn(),
-  setViewport: jest.fn(),
-  evaluateHandle: jest.fn(),
-  evaluate: jest.fn()
-};
-
-// Mock Puppeteer browser object
-export const mockPuppeteerBrowser = {
-  newPage: jest.fn(),
-  close: jest.fn(),
-  pages: jest.fn()
-};
-
 // Mock PDF buffer
 export const mockPDFBuffer = Buffer.from('PDF content here');
-
-// PDF generation options
-export const mockPDFOptions = {
-  format: 'A4',
-  printBackground: true,
-  margin: {
-    top: '20mm',
-    right: '20mm',
-    bottom: '20mm',
-    left: '20mm'
-  },
-  displayHeaderFooter: true,
-  headerTemplate: '<div></div>',
-  footerTemplate: `<div style="font-size: 10px; margin: 0 auto;">
-    <span class="pageNumber"></span> / <span class="totalPages"></span>
-  </div>`
-};
-
-// HTML template for testing
-export const mockHTMLTemplate = `
-<!DOCTYPE html>
-<html lang="pt-BR">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Roteiro de Viagem - {{destination}}</title>
-    <style>
-        body { font-family: Arial, sans-serif; line-height: 1.6; margin: 0; padding: 20px; }
-        .header { text-align: center; margin-bottom: 30px; }
-        .title { color: #2c3e50; font-size: 28px; margin-bottom: 10px; }
-        .content { max-width: 800px; margin: 0 auto; }
-        h1 { color: #34495e; border-bottom: 2px solid #3498db; padding-bottom: 10px; }
-        h2 { color: #2980b9; margin-top: 25px; }
-        .day-section { margin: 20px 0; padding: 15px; background-color: #ecf0f1; border-radius: 5px; }
-        .footer { text-align: center; margin-top: 40px; font-size: 12px; color: #7f8c8d; }
-    </style>
-</head>
-<body>
-    <div class="header">
-        <h1 class="title">🌍 Roteiro de Viagem</h1>
-        <p><strong>Destino:</strong> {{destination}}</p>
-        <p><strong>Período:</strong> {{startDate}} até {{endDate}}</p>
-        <p><strong>Gerado em:</strong> {{generatedAt}}</p>
-    </div>
-    
-    <div class="content">
-        {{content}}
-    </div>
-    
-    <div class="footer">
-        <p>Gerado por AluTrip - Seu assistente de viagem</p>
-        <p>www.alutrip.com</p>
-    </div>
-</body>
-</html>`;
 
 // File system mock responses
 export const mockFileExists = true;
@@ -306,7 +238,6 @@ export const invalidPDFExtension = '/app/pdfs/document.txt';
 
 // Error messages
 export const pdfGenerationErrors = {
-  puppeteerLaunchError: 'Failed to launch browser',
   contentGenerationError: 'Failed to generate PDF content',
   fileSystemError: 'Failed to write PDF file',
   invalidPath: 'Invalid PDF path provided'

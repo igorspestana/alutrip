@@ -82,6 +82,9 @@ services:
       context: ..
       dockerfile: Dockerfile
       target: production
+      args:
+        USER_UID: 1000
+        USER_GID: 1000
     container_name: alutrip-backend
     ports:
       - "3000:3000"
@@ -124,6 +127,9 @@ services:
       context: ..
       dockerfile: Dockerfile
       target: builder
+      args:
+        USER_UID: 1000
+        USER_GID: 1000
     container_name: alutrip-backend-dev
     ports:
       - "3001:3000"

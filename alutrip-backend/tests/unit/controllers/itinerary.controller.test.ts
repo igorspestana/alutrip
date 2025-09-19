@@ -1,17 +1,11 @@
-jest.mock('puppeteer', () => ({
+jest.mock('pdfmake', () => ({
   __esModule: true,
-  default: {
-    launch: jest.fn().mockResolvedValue({
-      newPage: jest.fn().mockResolvedValue({
-        setContent: jest.fn(),
-        pdf: jest.fn().mockResolvedValue(Buffer.from('mock pdf')),
-        close: jest.fn()
-      }),
-      close: jest.fn()
+  default: jest.fn().mockImplementation(() => ({
+    createPdfKitDocument: jest.fn().mockReturnValue({
+      pipe: jest.fn(),
+      end: jest.fn()
     })
-  },
-  Browser: jest.fn(),
-  PDFOptions: jest.fn()
+  }))
 }));
 
 import { Request, Response } from 'express';

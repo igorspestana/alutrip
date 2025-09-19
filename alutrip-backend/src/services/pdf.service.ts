@@ -1,5 +1,7 @@
-import puppeteer, { Browser, PDFOptions } from 'puppeteer';
+import PdfPrinter from 'pdfmake';
+import { TDocumentDefinitions, TFontDictionary } from 'pdfmake/interfaces';
 import { promises as fs } from 'fs';
+import * as fsSync from 'fs';
 import path from 'path';
 import { logger } from '../config/logger';
 import { config } from '../config/env';
@@ -7,41 +9,32 @@ import { Itinerary } from '../types/travel';
 
 /**
  * PDF Service for generating professional travel itineraries
- * Uses Puppeteer to convert HTML templates to PDF documents
+ * Uses PDFMake to create structured PDF documents
  */
 export class PDFService {
-  private static browser: Browser | null = null;
+  private static printer: PdfPrinter | null = null;
 
   /**
-   * Initialize browser instance (singleton pattern)
+   * Initialize PDFMake printer (singleton pattern)
    */
-  private static async getBrowser(): Promise<Browser> {
-    if (!this.browser) {
-      logger.info('Initializing Puppeteer browser', { context: 'pdf' });
+  private static getPrinter(): PdfPrinter {
+    if (!this.printer) {
+      logger.info('Initializing PDFMake printer', { context: 'pdf' });
       
-      this.browser = await puppeteer.launch({
-        headless: 'new',
-        args: [
-          '--no-sandbox',
-          '--disable-setuid-sandbox',
-          '--disable-dev-shm-usage',
-          '--disable-accelerated-2d-canvas',
-          '--no-first-run',
-          '--no-zygote',
-          '--single-process',
-          '--disable-gpu'
-        ],
-        timeout: 60000
-      });
+      // Define fonts for PDFMake
+      const fonts: TFontDictionary = {
+        Roboto: {
+          normal: 'Helvetica',
+          bold: 'Helvetica-Bold',
+          italics: 'Helvetica-Oblique',
+          bolditalics: 'Helvetica-BoldOblique'
+        }
+      };
 
-      // Handle browser disconnections
-      this.browser.on('disconnected', () => {
-        logger.warn('Puppeteer browser disconnected', { context: 'pdf' });
-        this.browser = null;
-      });
+      this.printer = new PdfPrinter(fonts);
     }
 
-    return this.browser;
+    return this.printer;
   }
 
   /**
@@ -67,52 +60,36 @@ export class PDFService {
       const filename = this.generateFilename(itinerary);
       const filepath = path.join(config.PDF_STORAGE_PATH, filename);
 
-      // Create HTML content
-      const htmlContent = await this.createItineraryHTML(itinerary, generatedContent);
+      // Create PDF document definition
+      const docDefinition = this.createItineraryDocDefinition(itinerary, generatedContent);
 
       // Generate PDF
-      const browser = await this.getBrowser();
-      const page = await browser.newPage();
-      
-      try {
-        // Set page content
-        await page.setContent(htmlContent, { 
-          waitUntil: 'networkidle0',
-          timeout: 30000
-        });
+      const printer = this.getPrinter();
+      const pdfDoc = printer.createPdfKitDocument(docDefinition);
 
-        // Configure PDF options
-        const pdfOptions: PDFOptions = {
-          path: filepath,
-          format: 'A4',
-          printBackground: true,
-          margin: {
-            top: '20px',
-            right: '20px',
-            bottom: '20px',
-            left: '20px'
-          },
-          timeout: config.PDF_TIMEOUT,
-          preferCSSPageSize: true
-        };
+      // Create write stream
+      const writeStream = fsSync.createWriteStream(filepath);
 
-        // Generate PDF
-        await page.pdf(pdfOptions);
+      // Pipe PDF to file
+      pdfDoc.pipe(writeStream);
+      pdfDoc.end();
 
-        const processingTime = Date.now() - startTime;
+      // Wait for write to complete
+      await new Promise<void>((resolve, reject) => {
+        writeStream.on('finish', resolve);
+        writeStream.on('error', reject);
+      });
 
-        logger.info('PDF generation completed', {
-          context: 'pdf',
-          itineraryId: itinerary.id,
-          filename,
-          processingTime: `${processingTime}ms`
-        });
+      const processingTime = Date.now() - startTime;
 
-        return { filename, filepath };
+      logger.info('PDF generation completed', {
+        context: 'pdf',
+        itineraryId: itinerary.id,
+        filename,
+        processingTime: `${processingTime}ms`
+      });
 
-      } finally {
-        await page.close();
-      }
+      return { filename, filepath };
 
     } catch (error) {
       const processingTime = Date.now() - startTime;
@@ -129,14 +106,12 @@ export class PDFService {
   }
 
   /**
-   * Create HTML content for itinerary PDF
+   * Create PDFMake document definition for itinerary
    */
-  private static async createItineraryHTML(
+  private static createItineraryDocDefinition(
     itinerary: Itinerary,
     generatedContent: string
-  ): Promise<string> {
-    
-
+  ): TDocumentDefinitions {
     // Calculate trip duration
     const startDate = new Date(itinerary.start_date);
     const endDate = new Date(itinerary.end_date);
@@ -152,283 +127,238 @@ export class PDFService {
       });
     };
 
-    // Format content with proper line breaks and structure
-    const formattedContent = this.formatItineraryContent(generatedContent);
+    // Parse content into structured sections
+    const parsedContent = this.parseItineraryContent(generatedContent);
 
-    return `
-<!DOCTYPE html>
-<html lang="pt-BR">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Roteiro de Viagem - ${itinerary.destination}</title>
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
+    // Build trip info section
+    const tripInfoColumns = [
+      {
+        width: '50%',
+        stack: [
+          { text: 'Destino:', style: 'infoLabel' },
+          { text: itinerary.destination, style: 'infoValue', margin: [0, 0, 0, 10] },
+          { text: 'Início:', style: 'infoLabel' },
+          { text: formatDate(startDate), style: 'infoValue', margin: [0, 0, 0, 10] }
+        ]
+      },
+      {
+        width: '50%',
+        stack: [
+          { text: 'Duração:', style: 'infoLabel' },
+          { text: `${duration} dia${duration > 1 ? 's' : ''}`, style: 'infoValue', margin: [0, 0, 0, 10] },
+          { text: 'Termino:', style: 'infoLabel' },
+          { text: formatDate(endDate), style: 'infoValue', margin: [0, 0, 0, 10] }
+        ]
+      }
+    ];
+
+    // Build content array
+    const contentArray: any[] = [
+      // Header
+      {
+        stack: [
+          {
+            text: 'Roteiro de Viagem',
+            style: 'title',
+            alignment: 'center',
+            margin: [0, 10, 0, 10]
+          },
+          {
+            text: itinerary.destination,
+            style: 'subtitle',
+            alignment: 'center',
+            margin: [0, 0, 0, 10]
+          }
+        ],
+        fillColor: '#667eea',
+        margin: [0, 0, 0, 20]
+      },
+
+      // Trip Information
+      {
+        stack: [
+          {
+            text: 'Informacoes da Viagem',
+            style: 'sectionHeader',
+            margin: [0, 10, 0, 15]
+          },
+          {
+            columns: tripInfoColumns
+          }
+        ],
+        fillColor: '#f8f9fa',
+        margin: [0, 0, 0, 20]
+      },
+
+      // Main Content
+      {
+        text: 'Seu Roteiro Personalizado',
+        style: 'sectionHeader',
+        margin: [0, 0, 0, 15]
+      },
+      
+      // Parsed content sections
+      ...parsedContent
+    ];
+
+    // Add budget info if available
+    if (itinerary.budget && contentArray[1] && contentArray[1].stack) {
+      contentArray[1].stack.push({
+        text: [
+          { text: 'Orçamento: ', style: 'infoLabel' },
+          { text: itinerary.budget.toLocaleString(), style: 'infoValue' }
+        ],
+        margin: [0, 10, 0, 0]
+      });
+    }
+
+    // Add interests if available
+    if (itinerary.interests && itinerary.interests.length > 0 && contentArray[1] && contentArray[1].stack) {
+      contentArray[1].stack.push({
+        text: [
+          { text: 'Interesses: ', style: 'infoLabel' },
+          { text: itinerary.interests.join(', '), style: 'infoValue' }
+        ],
+        margin: [0, 10, 0, 0]
+      });
+    }
+
+    // Add footer
+    contentArray.push({
+      text: [
+        { text: 'AluTrip\n', style: 'footerTitle' },
+        { text: 'Seu assistente de viagem inteligente\n', style: 'footer' },
+        { 
+          text: `Gerado em ${new Date().toLocaleDateString('pt-BR')} as ${new Date().toLocaleTimeString('pt-BR')}`, 
+          style: 'footer' 
         }
-        
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            line-height: 1.6;
-            color: #333;
-            background: #fff;
+      ],
+      alignment: 'center',
+      margin: [0, 30, 0, 0]
+    });
+
+    return {
+      content: contentArray,
+      styles: {
+        title: {
+          fontSize: 24,
+          bold: true,
+          color: '#021017'
+        },
+        subtitle: {
+          fontSize: 16,
+          color: '#021017',
+          italics: true
+        },
+        sectionHeader: {
+          fontSize: 16,
+          bold: true,
+          color: '#021017',
+          margin: [0, 20, 0, 10]
+        },
+        dayHeader: {
+          fontSize: 14,
+          bold: true,
+          color: '#021017',
+          margin: [0, 15, 0, 8]
+        },
+        timeHeader: {
+          fontSize: 12,
+          bold: true,
+          color: '#333',
+          margin: [0, 10, 0, 5]
+        },
+        contentText: {
+          fontSize: 11,
+          lineHeight: 1.4,
+          margin: [0, 0, 0, 8]
+        },
+        infoLabel: {
+          fontSize: 10,
+          bold: true,
+          color: '#333'
+        },
+        infoValue: {
+          fontSize: 10,
+          color: '#333'
+        },
+        footerTitle: {
+          fontSize: 12,
+          bold: true,
+          color: '#021017'
+        },
+        footer: {
+          fontSize: 9,
+          color: '#333'
         }
-        
-        .header {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            padding: 40px 20px;
-            text-align: center;
-            margin-bottom: 30px;
-        }
-        
-        .header h1 {
-            font-size: 2.5em;
-            margin-bottom: 10px;
-            font-weight: 300;
-        }
-        
-        .header p {
-            font-size: 1.2em;
-            opacity: 0.9;
-        }
-        
-        .container {
-            max-width: 800px;
-            margin: 0 auto;
-            padding: 0 20px;
-        }
-        
-        .trip-info {
-            background: #f8f9fa;
-            padding: 25px;
-            border-radius: 10px;
-            margin-bottom: 30px;
-            border-left: 5px solid #667eea;
-        }
-        
-        .trip-info h2 {
-            color: #667eea;
-            margin-bottom: 15px;
-            font-size: 1.5em;
-        }
-        
-        .info-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 15px;
-            margin-bottom: 15px;
-        }
-        
-        .info-item {
-            display: flex;
-            align-items: center;
-        }
-        
-        .info-label {
-            font-weight: bold;
-            margin-right: 10px;
-            min-width: 80px;
-        }
-        
-        .info-value {
-            color: #555;
-        }
-        
-        .interests {
-            margin-top: 15px;
-        }
-        
-        .interests-list {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 8px;
-            margin-top: 5px;
-        }
-        
-        .interest-tag {
-            background: #667eea;
-            color: white;
-            padding: 5px 12px;
-            border-radius: 20px;
-            font-size: 0.9em;
-        }
-        
-        .content {
-            background: white;
-            padding: 30px;
-            border-radius: 10px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-            margin-bottom: 30px;
-        }
-        
-        .content h2 {
-            color: #667eea;
-            border-bottom: 2px solid #667eea;
-            padding-bottom: 10px;
-            margin-bottom: 25px;
-            font-size: 1.8em;
-        }
-        
-        .itinerary-text {
-            font-size: 1.1em;
-            line-height: 1.8;
-        }
-        
-        .itinerary-text h3 {
-            color: #764ba2;
-            margin: 25px 0 15px 0;
-            font-size: 1.3em;
-        }
-        
-        .itinerary-text h4 {
-            color: #555;
-            margin: 20px 0 10px 0;
-            font-size: 1.1em;
-        }
-        
-        .itinerary-text p {
-            margin-bottom: 15px;
-        }
-        
-        .itinerary-text ul, .itinerary-text ol {
-            margin: 15px 0 15px 20px;
-        }
-        
-        .itinerary-text li {
-            margin-bottom: 8px;
-        }
-        
-        .footer {
-            text-align: center;
-            padding: 30px 20px;
-            color: #777;
-            border-top: 1px solid #eee;
-            margin-top: 40px;
-        }
-        
-        .footer p {
-            margin-bottom: 5px;
-        }
-        
-        .alutrip-logo {
-            font-weight: bold;
-            color: #667eea;
-            font-size: 1.2em;
-        }
-        
-        @media print {
-            .header {
-                -webkit-print-color-adjust: exact;
-                color-adjust: exact;
-            }
-            
-            .trip-info {
-                page-break-inside: avoid;
-            }
-        }
-    </style>
-</head>
-<body>
-    <div class="header">
-        <h1>🧳 Roteiro de Viagem</h1>
-        <p>${itinerary.destination}</p>
-    </div>
-    
-    <div class="container">
-        <div class="trip-info">
-            <h2>📋 Informações da Viagem</h2>
-            <div class="info-grid">
-                <div class="info-item">
-                    <span class="info-label">📍 Destino:</span>
-                    <span class="info-value">${itinerary.destination}</span>
-                </div>
-                <div class="info-item">
-                    <span class="info-label">⏰ Duração:</span>
-                    <span class="info-value">${duration} dia${duration > 1 ? 's' : ''}</span>
-                </div>
-                <div class="info-item">
-                    <span class="info-label">📅 Início:</span>
-                    <span class="info-value">${formatDate(startDate)}</span>
-                </div>
-                <div class="info-item">
-                    <span class="info-label">📅 Término:</span>
-                    <span class="info-value">${formatDate(endDate)}</span>
-                </div>
-                ${itinerary.budget ? `
-                <div class="info-item">
-                    <span class="info-label">💰 Orçamento:</span>
-                    <span class="info-value">$${itinerary.budget.toLocaleString()}</span>
-                </div>
-                ` : ''}
-                
-            </div>
-            
-            ${itinerary.interests && itinerary.interests.length > 0 ? `
-            <div class="interests">
-                <span class="info-label">🎯 Interesses:</span>
-                <div class="interests-list">
-                    ${itinerary.interests.map(interest => `<span class="interest-tag">${interest}</span>`).join('')}
-                </div>
-            </div>
-            ` : ''}
-            
-            
-        </div>
-        
-        <div class="content">
-            <h2>🗺️ Seu Roteiro Personalizado</h2>
-            <div class="itinerary-text">
-                ${formattedContent}
-            </div>
-        </div>
-    </div>
-    
-    <div class="footer">
-        <p class="alutrip-logo">🚀 AluTrip</p>
-        <p>Seu assistente de viagem inteligente</p>
-        <p>Gerado em ${new Date().toLocaleDateString('pt-BR')} às ${new Date().toLocaleTimeString('pt-BR')}</p>
-    </div>
-</body>
-</html>
-    `;
+      },
+      defaultStyle: {
+        font: 'Roboto',
+        fontSize: 10
+      },
+      pageSize: 'A4',
+      pageMargins: [40, 60, 40, 60],
+      info: {
+        title: `Roteiro de Viagem - ${itinerary.destination}`,
+        author: 'AluTrip',
+        subject: 'Travel Itinerary',
+        creator: 'AluTrip Travel Assistant'
+      }
+    };
   }
 
   /**
-   * Format itinerary content for better HTML display
+   * Parse itinerary content into structured sections
    */
-  private static formatItineraryContent(content: string): string {
-    // Replace line breaks with HTML
-    let formatted = content
-      .replace(/\n\n/g, '</p><p>')
-      .replace(/\n/g, '<br>');
+  private static parseItineraryContent(content: string): any[] {
+    const sections: any[] = [];
+    const lines = content.split('\n').filter(line => line.trim());
 
-    // Add paragraph tags
-    formatted = `<p>${formatted}</p>`;
+    for (const line of lines) {
+      const trimmedLine = line.trim();
+      
+      if (!trimmedLine) {
+        continue;
+      }
 
-    // Format headers (Day 1, Day 2, etc.)
-    formatted = formatted.replace(/(<p>|<br>)(Day \d+|Dia \d+)([^<]*?)/gi, '<h3>$2$3</h3>');
-    
-    // Format subheaders (Morning, Afternoon, Evening, etc.)
-    formatted = formatted.replace(/(<p>|<br>)(Morning|Afternoon|Evening|Night|Manhã|Tarde|Noite)([^<]*?)/gi, '<h4>$2$3</h4>');
+      // Day headers (Dia 1, Day 1, etc.)
+      if (/^(Dia|Day)\s+\d+/i.test(trimmedLine)) {
+        sections.push({
+          text: trimmedLine,
+          style: 'dayHeader'
+        });
+      } else if (/^(Manhã|Tarde|Noite|Evening|Morning|Afternoon|Night)/i.test(trimmedLine)) {
+        // Time headers (Manhã, Tarde, Noite, Morning, Afternoon, etc.)
+        sections.push({
+          text: trimmedLine,
+          style: 'timeHeader'
+        });
+      } else if (/^\d+\.|\*\*.*\*\*/.test(trimmedLine)) {
+        // Main headers (numbered sections, **bold text**)
+        const cleanText = trimmedLine.replace(/\*\*/g, '');
+        sections.push({
+          text: cleanText,
+          style: 'sectionHeader'
+        });
+      } else if (/^[-•*]\s/.test(trimmedLine)) {
+        // Bullet points
+        const bulletText = trimmedLine.replace(/^[-•*]\s/, '');
+        sections.push({
+          text: `• ${bulletText}`,
+          style: 'contentText',
+          margin: [15, 0, 0, 5]
+        });
+      } else {
+        // Regular content
+        sections.push({
+          text: trimmedLine,
+          style: 'contentText'
+        });
+      }
+    }
 
-    // Convert bullet points to proper lists
-    formatted = formatted.replace(/(<p>|<br>)[-•*]\s*([^<]*?)(<br>|<\/p>)/gi, '<li>$2</li>');
-    
-    // Wrap consecutive list items in ul tags
-    formatted = formatted.replace(/(<li>.*?<\/li>)(\s*)(?!<li>)/gs, '<ul>$1</ul>$2');
-    formatted = formatted.replace(/<\/ul>(\s*)<ul>/g, '$1');
-
-    // Clean up empty paragraphs
-    formatted = formatted.replace(/<p><\/p>/g, '');
-    formatted = formatted.replace(/<p>\s*<\/p>/g, '');
-
-    return formatted;
+    return sections;
   }
-
-  
 
   /**
    * Generate unique filename for PDF
@@ -500,14 +430,11 @@ export class PDFService {
   }
 
   /**
-   * Close browser instance (cleanup)
+   * Close browser instance (cleanup) - kept for compatibility
    */
   static async closeBrowser(): Promise<void> {
-    if (this.browser) {
-      logger.info('Closing Puppeteer browser', { context: 'pdf' });
-      await this.browser.close();
-      this.browser = null;
-    }
+    // No browser to close with PDFMake, but keep method for compatibility
+    logger.info('PDF service cleanup called (PDFMake - no browser to close)', { context: 'pdf' });
   }
 
   /**
@@ -515,19 +442,39 @@ export class PDFService {
    */
   static async healthCheck(): Promise<{ status: 'healthy' | 'unhealthy'; error?: string }> {
     try {
-      // Test browser initialization
-      const browser = await this.getBrowser();
-      const page = await browser.newPage();
-      
-      // Simple HTML to PDF test
-      await page.setContent('<html><body><h1>Health Check</h1></body></html>');
-      const pdf = await page.pdf({ format: 'A4' });
-      await page.close();
+      // Test PDF generation with simple content
+      const testItinerary: Itinerary = {
+        id: 0,
+        destination: 'Health Check Test',
+        start_date: new Date(),
+        end_date: new Date(),
+        processing_status: 'completed',
+        created_at: new Date(),
+        client_ip: 'test',
+        request_data: {
+          destination: 'Health Check Test',
+          start_date: new Date().toISOString(),
+          end_date: new Date().toISOString()
+        },
+        generated_content: 'Test content',
+        model_used: 'groq'
+      };
 
-      if (pdf && pdf.length > 0) {
+      const testContent = 'Health check test content for PDF generation.';
+      
+      // Create a temporary test document definition
+      const docDefinition = this.createItineraryDocDefinition(testItinerary, testContent);
+      
+      // Try to create PDF document (without writing to file)
+      const printer = this.getPrinter();
+      const pdfDoc = printer.createPdfKitDocument(docDefinition);
+      
+      // Test that we can create the document
+      if (pdfDoc) {
+        pdfDoc.end(); // Close the document
         return { status: 'healthy' };
       } else {
-        return { status: 'unhealthy', error: 'PDF generation returned empty result' };
+        return { status: 'unhealthy', error: 'PDF document creation returned null' };
       }
     } catch (error) {
       return { status: 'unhealthy', error: (error as Error).message };
@@ -536,4 +483,3 @@ export class PDFService {
 }
 
 export const pdfService = PDFService;
-
