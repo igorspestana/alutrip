@@ -2,19 +2,6 @@
 
 Travel Planning Assistant Frontend built with React 19.1, TypeScript, Tailwind CSS, and Shadcn/ui.
 
-## Features
-
-- **AluTrip Responde**: Ask travel questions and get AI-powered answers
-- **AluTrip Planeja**: Create personalized travel itineraries
-- **Tab Navigation**: Switch between features with elegant tab interface
-- **Persistent State**: Last selected tab is remembered using localStorage
-- Modern UI with custom AluTrip theme
-- Responsive design optimized for all devices
-- Rate limiting user feedback
-- Real-time form validation
-- PDF itinerary downloads
-- Smooth animations and transitions
-
 ## Tech Stack
 
 - **Frontend**: React 19.1 with TypeScript
@@ -24,45 +11,41 @@ Travel Planning Assistant Frontend built with React 19.1, TypeScript, Tailwind C
 - **Icons**: Lucide React
 - **API Client**: Axios
 
-## Quick Start
+## 🚀 How to Run
 
-### Development
+### Frontend
 
-```bash
-# Install dependencies
-npm install
-
-# Start development server
-npm run dev
-
-# Open http://localhost:5173
-```
-
-### Docker Development
+#### Option 1: Docker (Recommended)
 
 ```bash
-# Start with Docker Compose
+# Navigate to frontend directory
+cd alutrip-frontend
+
+# Start frontend with Docker
 npm run dc:up
 
-# View logs
+# Check logs
 npm run dc:logs
-
-# Check status
-npm run dc:ps
 
 # Stop services
 npm run dc:down
 ```
 
-### Production Build
+#### Option 2: Local Development
 
 ```bash
-# Build for production
-npm run build
+# Navigate to frontend directory
+cd alutrip-frontend
 
-# Preview production build
-npm run preview
+# Install dependencies
+npm install
+
+# Run in development mode
+npm run dev
 ```
+
+**Service available after starting container:**
+- Frontend: `http://localhost:5173` (Docker) or `http://localhost:5173` (Local)
 
 ## Available Scripts
 
@@ -73,19 +56,6 @@ npm run preview
 - `npm run lint:fix` - Fix ESLint errors
 - `npm run format` - Format code with Prettier
 - `npm run type-check` - Run TypeScript type checking
-
-## Docker Commands
-
-```bash
-# Development environment
-npm run dc:up        # Start frontend container
-npm run dc:logs      # View container logs  
-npm run dc:ps        # List running services
-npm run dc:down      # Stop services
-
-# The frontend will be available at http://localhost:5173
-# Hot reload is enabled for development
-```
 
 ## Environment Variables
 
@@ -125,23 +95,6 @@ VITE_API_URL=http://localhost:3000
 **Production** (`.env.production`):
 ```bash
 VITE_API_URL=https://api.alutrip.com
-```
-
-## Project Structure
-
-```
-src/
-├── components/
-│   ├── forms/          # Form components
-│   ├── common/         # Reusable components
-│   ├── layout/         # Layout components
-│   └── ui/             # Shadcn/ui components
-├── pages/              # Page components
-├── services/           # API clients
-├── types/              # TypeScript types
-├── utils/              # Utility functions
-├── lib/                # Utility functions (cn, etc.)
-└── App.tsx             # Main app component
 ```
 
 ## Features
