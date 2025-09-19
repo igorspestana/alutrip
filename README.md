@@ -134,7 +134,7 @@ For full functionality, configure the API keys:
 
 #### Frontend Configuration
 
-Create a `.env` file in the `alutrip-frpntend/` directory based on `.env.example`:
+Create a `.env` file in the `alutrip-frontend/` directory based on `.env.example`:
 
 ```bash
 # API Configuration
