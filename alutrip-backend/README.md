@@ -22,7 +22,7 @@ Travel planning assistant backend API built with Node.js, TypeScript, and Expres
 - **Validation**: Zod schemas
 - **Logging**: Winston (structured logging)
 - **Queue System**: Bull/BullMQ (async processing)
-- **PDF Generation**: Puppeteer
+- **PDF Generation**: PDFMake
 - **Containerization**: Docker + Docker Compose
 
 ## Project Structure

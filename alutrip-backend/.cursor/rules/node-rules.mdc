@@ -201,7 +201,7 @@ try {
 - **Prompt Engineering**: Specific templates for travel questions and itinerary generation
 
 ## PDF Generation
-- **Puppeteer**: For itinerary PDF generation
+- **PDFMake**: For itinerary PDF generation
 - **Templates**: Professional layouts for travel documents
 - **Storage**: Local or S3 storage for generated PDFs
 
