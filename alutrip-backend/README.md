@@ -53,178 +53,104 @@ logs/               # Application logs
 pdfs/               # Generated PDFs
 ```
 
-## Quick Start
+## 🚀 How to Run
 
-### Prerequisites
+### Option 1: Local Execution (Development)
 
-- Node.js 22.x or higher
-- npm 10.x or higher
-- Docker and Docker Compose (for containerized setup)
+#### 1. Backend (Recommended with Docker)
 
-### Environment Setup
-
-1. **Clone the repository**
-   ```bash
-   git clone <repository-url>
-   cd alutrip-backend
-   ```
-
-2. **Install dependencies**
-   ```bash
-   npm install
-   ```
-
-3. **Configure environment variables**
-   ```bash
-   cp .env.example .env
-   # Edit .env with your actual configuration (single source of truth)
-   ```
-
-4. **Update the `.env` file with your actual values:**
-   ```env
-   # Replace these placeholder values with your actual credentials
-   DATABASE_URL=postgresql://alutrip_user:your_actual_postgres_password@localhost:5432/alutrip_backend
-   REDIS_URL=redis://localhost:6379
-   
-   # AI Services
-   GROQ_API_KEY=your_actual_groq_api_key
-   GEMINI_API_KEY=your_actual_gemini_api_key
-   
-   # Server Configuration
-   PORT=3000
-   NODE_ENV=development
-   CORS_ORIGIN=http://localhost:5173
-   ```
-
-5. **Start Docker services (PostgreSQL, Redis, tools) using the root `.env`:**
-   ```bash
-   npm run dc:up
-   # View status
-   npm run dc:ps
-   # View logs (example: redis-commander)
-   npm run dc:logs -- redis-commander
-   ```
-
-### Security Notes
-
-- Never commit the actual `.env` file to the repository
-- Keep a single `.env` at the project root; Docker Compose is invoked with `--env-file ./.env`
-- These files contain sensitive information like API keys and database passwords
-- Always use the `.example` files as templates for new environments
-
-### Getting API Keys
-
-- **Groq API Key**: Visit [Groq Console](https://console.groq.com/) to get your API key
-- **Gemini API Key**: Visit [Google AI Studio](https://makersuite.google.com/app/apikey) to get your API key
-
-### Database Setup
-
-The Docker Compose configuration includes:
-- PostgreSQL database
-- Redis cache
-- PgAdmin for database administration
-- Redis Commander for Redis administration
-
-All services are configured with default credentials that should be changed for production use.
-
-### Database Migrations
-
-The project includes automatic database schema management through migrations:
-
-- **Migration files**: Located in `migrations/` directory (numbered SQL files)
-- **Migration tracking**: Automatic tracking of executed migrations in `migrations` table
-- **Two execution modes**:
-  - `migrate:dev` - Runs TypeScript files directly (for local development)
-  - `migrate` - Runs compiled JavaScript files (for Docker/production)
-
-**When to run migrations:**
-- First time setup: Always run after starting database
-- After pulling code updates: Check if new migrations were added
-- Before deploying: Ensure all migrations are applied
-
-### Development
-
-#### Option 1: Docker (Recommended)
+**IMPORTANT**: To test the system properly, it's recommended to start infrastructure services with Docker:
 
 ```bash
-# Start all services (PostgreSQL, Redis, API) using root .env
+# Navigate to backend directory
+cd alutrip-backend
+
+# Start PostgreSQL, Redis, PgAdmin and Redis Commander
+npm run dc:up -- postgres redis pgadmin redis-commander
+
+# Wait for services to be ready (30-60 seconds)
+# Check container status
+npm run dc:ps
+
+# Run database migrations
+npm run migrate:dev up
+
+# Install dependencies and run in development mode
+npm install
+npm run dev
+```
+
+**Services available after starting containers:**
+- PostgreSQL: `localhost:5432`
+- Redis: `localhost:6379`
+- PgAdmin: `http://localhost:8080` (admin@alutrip.com / your_pgadmin_password)
+- Redis Commander: `http://localhost:8001` (admin / your_redis_commander_password)
+
+### Option 2: Execution with Docker Compose
+
+#### Complete Backend
+
+```bash
+cd alutrip-backend
+
+# Start all services (including backend)
 npm run dc:up
 
-# Run database migrations (required on first run)
-npm run migrate up
+# Wait for services to be ready (30-60 seconds)
+# Run database migrations
+npm run migrate:dev up
 
-# Check migration status (optional)
-npm run migrate status
-
-# View logs
-npm run dc:logs -- alutrip-backend
+# Check logs
+npm run dc:logs
 
 # Stop services
 npm run dc:down
 ```
 
-**Important Notes:**
-- The production image already runs a build step. You generally do not need to run `npm run build` on the host when using the Docker stack.
-- **Migrations with Docker**: Use `npm run migrate` (compiled) commands when running with Docker containers
-- **Migrations for local development**: Use `npm run migrate:dev` (TypeScript) commands only when running the API directly on the host
+## ⚙️ Configuration
 
-#### Option 2: Local Development
+### Environment Variables
 
-```bash
-# Start PostgreSQL and Redis via Docker only
-npm run dc:up -- postgres redis pgadmin redis-commander
-
-# EITHER run migrations in dev without build (recommended during development)
-npm run migrate:dev status
-npm run migrate:dev up
-
-# OR build once then run compiled migrations (recommended for production-like runs)
-npm run build
-npm run migrate up
-
-# Start development server (uses root .env via dotenv)
-npm run dev
-```
-
-### Production
+Create a `.env` file in the `alutrip-backend/` directory based on `.env.example`:
 
 ```bash
-# Build the application
-npm run build
+# Database
+POSTGRES_USER=alutrip_user
+POSTGRES_PASSWORD=your_postgres_password
 
-# Run migrations
-npm run migrate up
+# Redis
+REDIS_URL=redis://localhost:6379
 
-# Start production server
-npm start
+# AI Providers (required for full functionality)
+GROQ_API_KEY=your-groq-api-key
+GEMINI_API_KEY=your-gemini-api-key
+
+# Rate Limiting
+RATE_LIMIT_REQUESTS=5
+RATE_LIMIT_WINDOW=86400000
+
+# Admin Tools
+PGADMIN_EMAIL=admin@alutrip.com
+PGADMIN_PASSWORD=your_pgadmin_password
+REDIS_COMMANDER_USER=admin
+REDIS_COMMANDER_PASSWORD=your_redis_commander_password
 ```
+
+### API Keys
+
+For full functionality, configure the API keys:
+
+1. **Groq**: Get it at https://console.groq.com/
+2. **Gemini**: Get it at https://makersuite.google.com/app/apikey
 
 ## API Endpoints
 
-### Health Check
+For detailed API documentation including request/response examples, error codes, and complete endpoint specifications, see [docs/endpoints.md](docs/endpoints.md).
 
-- `GET /health` - Basic health check
-- `GET /health/detailed` - Detailed system information
-- `GET /health/ready` - Readiness probe (Kubernetes)
-- `GET /health/live` - Liveness probe (Kubernetes)
-
-### Travel Q&A (Coming in Phase 2)
-
-- `POST /api/travel/ask` - Submit travel question
-- `GET /api/travel/questions` - Get recent questions
-- `GET /api/travel/questions/:id` - Get specific question
-
-### Itinerary Planning (Coming in Phase 3)
-
-- `POST /api/itinerary/create` - Submit itinerary request
-- `GET /api/itinerary/:id/status` - Check generation status
-- `GET /api/itinerary/:id/download` - Download PDF
-
-### Rate Limiting
-
-- `GET /api/limits/status` - Check rate limit status
 
 ## Scripts
+
+### NPM Scripts
 
 ```bash
 # Development
@@ -246,6 +172,68 @@ npm run format       # Format code with Prettier
 npm test             # Run tests
 npm run test:coverage # Run tests with coverage
 ```
+
+### Testing Scripts
+
+The `scripts/` directory contains comprehensive testing and utility scripts:
+
+#### API Testing Scripts
+
+- **`test-alutrip-responde.sh`** - Complete test suite for Travel Q&A endpoints
+  - Tests all travel question endpoints
+  - Validates AI model responses (Groq and Gemini)
+  - Tests rate limiting and guardrails
+  - Includes error handling scenarios
+
+- **`test-alutrip-planeja.sh`** - Complete test suite for Itinerary Planning endpoints
+  - Tests itinerary creation and processing
+  - Validates PDF generation
+  - Tests asynchronous processing and status checking
+  - Includes rescue functionality for stuck itineraries
+
+- **`test-rate-limit-complete.sh`** - Comprehensive rate limiting tests
+  - Tests rate limit enforcement across all features
+  - Validates reset mechanisms
+  - Tests edge cases and error scenarios
+
+#### Utility Scripts
+
+- **`check-rate-limits.sh`** - Check current rate limit status
+  - Shows active rate limits by IP and feature
+  - Displays usage statistics
+  - Useful for monitoring and debugging
+
+- **`clear-rate-limits.sh`** - Clear all rate limits
+  - Removes all rate limit entries from Redis
+  - Useful for testing and development
+  - Includes safety confirmations
+
+- **`reset-containers.sh`** - Reset Docker containers and data
+  - Stops all containers
+  - Removes volumes (deletes all data)
+  - Cleans up orphaned resources
+  - **Warning**: This will delete all data!
+
+#### Usage Examples
+
+```bash
+# Test Travel Q&A functionality
+./scripts/test-alutrip-responde.sh
+
+# Test Itinerary Planning functionality
+./scripts/test-alutrip-planeja.sh
+
+# Check current rate limits
+./scripts/check-rate-limits.sh
+
+# Clear rate limits for testing
+./scripts/clear-rate-limits.sh
+
+# Reset all containers (destructive!)
+./scripts/reset-containers.sh
+```
+
+**Note**: All testing scripts require the backend API to be running (`npm run dev`) and Docker containers to be active.
 
 ## Docker Commands
 
