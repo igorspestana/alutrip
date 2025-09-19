@@ -55,7 +55,76 @@ pdfs/               # Generated PDFs
 
 ## 🚀 How to Run
 
-### Backend
+### Environment Configuration (Required)
+
+Before running the project, you need to configure the environment variables for backend:
+
+Create a `.env` file in the `alutrip-backend/` directory based on `.env.example`:
+
+```bash
+# Server Configuration
+PORT=3000
+NODE_ENV=development
+
+# Database Configuration
+DATABASE_URL=postgresql://alutrip_user:alutrip_password@localhost:5432/alutrip_backend
+REDIS_URL=redis://localhost:6379
+
+# AI Service Configuration - Groq
+GROQ_API_KEY=your-groq-api-key
+GROQ_MODEL=llama-3.1-8b-instant
+
+# AI Service Configuration - Gemini
+GEMINI_API_KEY=your-gemini-api-key
+GEMINI_MODEL=gemini-2.5-flash
+
+# Rate Limiting Configuration
+RATE_LIMIT_REQUESTS=5
+RATE_LIMIT_WINDOW=86400000
+RATE_LIMIT_CLEANUP_INTERVAL=3600000
+
+# PDF Configuration
+PDF_STORAGE_PATH=./pdfs
+PDF_MAX_PAGES=50
+PDF_TIMEOUT=300000
+
+# Queue Configuration
+REDIS_QUEUE_URL=redis://localhost:6379
+QUEUE_CONCURRENCY=5
+QUEUE_MAX_ATTEMPTS=3
+
+# Logging Configuration
+LOG_LEVEL=info
+LOG_DIR=logs
+
+# HTTP Client Configuration
+HTTP_TIMEOUT=30000
+GROQ_TIMEOUT=60000
+GEMINI_TIMEOUT=60000
+
+# CORS Configuration (for Frontend)
+CORS_ORIGIN=http://localhost:5173
+CORS_CREDENTIALS=false
+
+# Session Configuration (for future features)
+SESSION_TIMEOUT=7200000
+
+# Docker Configuration
+POSTGRES_USER=alutrip_user
+POSTGRES_PASSWORD=your_postgres_password
+PGADMIN_EMAIL=admin@alutrip.com
+PGADMIN_PASSWORD=your_pgadmin_password
+REDIS_COMMANDER_USER=admin
+REDIS_COMMANDER_PASSWORD=your_redis_commander_password
+```
+### API Keys
+
+For full functionality, configure the API keys:
+
+1. **Groq**: Get it at https://console.groq.com/
+2. **Gemini**: Get it at https://makersuite.google.com/app/apikey
+
+### Start
 
 #### Option 1: Docker (Recommended)
 
@@ -114,46 +183,64 @@ npm run dev
 - PgAdmin: `http://localhost:8080` (admin@alutrip.com / your_pgadmin_password)
 - Redis Commander: `http://localhost:8001` (admin / your_redis_commander_password)
 
-## ⚙️ Configuration
+### Variable Descriptions
 
-### Environment Variables
+#### Server Configuration
+- `PORT`: Server port (default: 3000)
+- `NODE_ENV`: Environment mode (development/production)
 
-Create a `.env` file in the `alutrip-backend/` directory based on `.env.example`:
+#### Database Configuration
+- `DATABASE_URL`: PostgreSQL connection string
+- `REDIS_URL`: Redis connection string for cache and rate limiting
 
-```bash
-# Database
-POSTGRES_USER=alutrip_user
-POSTGRES_PASSWORD=your_postgres_password
+#### AI Service Configuration
+- `GROQ_API_KEY`: API key for Groq AI service
+- `GROQ_MODEL`: Groq model to use (default: llama-3.1-8b-instant)
+- `GEMINI_API_KEY`: API key for Google Gemini AI service
+- `GEMINI_MODEL`: Gemini model to use (default: gemini-2.5-flash)
 
-# Redis
-REDIS_URL=redis://localhost:6379
+#### Rate Limiting Configuration
+- `RATE_LIMIT_REQUESTS`: Maximum requests per window (default: 5)
+- `RATE_LIMIT_WINDOW`: Time window in milliseconds (default: 24h)
+- `RATE_LIMIT_CLEANUP_INTERVAL`: Cleanup interval for expired limits (default: 1h)
 
-# AI Providers (required for full functionality)
-GROQ_API_KEY=your-groq-api-key
-GEMINI_API_KEY=your-gemini-api-key
+#### PDF Configuration
+- `PDF_STORAGE_PATH`: Directory for generated PDFs (default: ./pdfs)
+- `PDF_MAX_PAGES`: Maximum pages per PDF (default: 50)
+- `PDF_TIMEOUT`: PDF generation timeout in milliseconds (default: 5min)
 
-# Rate Limiting
-RATE_LIMIT_REQUESTS=5
-RATE_LIMIT_WINDOW=86400000
+#### Queue Configuration
+- `REDIS_QUEUE_URL`: Redis URL for job queue (default: same as REDIS_URL)
+- `QUEUE_CONCURRENCY`: Number of concurrent job processors (default: 5)
+- `QUEUE_MAX_ATTEMPTS`: Maximum retry attempts for failed jobs (default: 3)
 
-# Admin Tools
-PGADMIN_EMAIL=admin@alutrip.com
-PGADMIN_PASSWORD=your_pgadmin_password
-REDIS_COMMANDER_USER=admin
-REDIS_COMMANDER_PASSWORD=your_redis_commander_password
-```
+#### Logging Configuration
+- `LOG_LEVEL`: Logging level (error/warn/info/debug, default: info)
+- `LOG_DIR`: Directory for log files (default: logs)
 
-### API Keys
+#### HTTP Client Configuration
+- `HTTP_TIMEOUT`: Default HTTP timeout in milliseconds (default: 30s)
+- `GROQ_TIMEOUT`: Groq API timeout in milliseconds (default: 60s)
+- `GEMINI_TIMEOUT`: Gemini API timeout in milliseconds (default: 60s)
 
-For full functionality, configure the API keys:
+#### CORS Configuration
+- `CORS_ORIGIN`: Allowed origin for CORS (default: http://localhost:5173)
+- `CORS_CREDENTIALS`: Whether to allow credentials (default: false)
 
-1. **Groq**: Get it at https://console.groq.com/
-2. **Gemini**: Get it at https://makersuite.google.com/app/apikey
+#### Session Configuration
+- `SESSION_TIMEOUT`: Session timeout in milliseconds (default: 2h, for future features)
+
+#### Docker Configuration
+- `POSTGRES_USER`: PostgreSQL username for Docker
+- `POSTGRES_PASSWORD`: PostgreSQL password for Docker
+- `PGADMIN_EMAIL`: PgAdmin login email
+- `PGADMIN_PASSWORD`: PgAdmin login password
+- `REDIS_COMMANDER_USER`: Redis Commander username
+- `REDIS_COMMANDER_PASSWORD`: Redis Commander password
 
 ## API Endpoints
 
 For detailed API documentation including request/response examples, error codes, and complete endpoint specifications, see [docs/endpoints.md](docs/endpoints.md).
-
 
 ## Scripts
 

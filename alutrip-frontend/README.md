@@ -13,7 +13,16 @@ Travel Planning Assistant Frontend built with React 19.1, TypeScript, Tailwind C
 
 ## 🚀 How to Run
 
-### Frontend
+### Environment Configuration (Required)
+
+Before running the project, you need to configure the environment variables frontend:
+
+Create a `.env` file in the `alutrip-frpntend/` directory based on `.env.example`:
+
+```bash
+# API Configuration
+VITE_API_URL=http://localhost:3000
+```
 
 #### Option 1: Docker (Recommended)
 
@@ -47,6 +56,11 @@ npm run dev
 **Service available after starting container:**
 - Frontend: `http://localhost:5173` (Docker) or `http://localhost:5173` (Local)
 
+### Variable Descriptions
+
+#### API Configuration
+- `VITE_API_URL` - Backend API URL (default: `http://localhost:3000`)
+
 ## Available Scripts
 
 - `npm run dev` - Start development server
@@ -56,46 +70,6 @@ npm run dev
 - `npm run lint:fix` - Fix ESLint errors
 - `npm run format` - Format code with Prettier
 - `npm run type-check` - Run TypeScript type checking
-
-## Environment Variables
-
-The project uses environment-specific configuration files:
-
-### Development Setup
-
-Create a `.env` file in the project root:
-
-```bash
-# API Configuration
-VITE_API_URL=http://localhost:3000
-```
-
-### Environment Files
-
-- `.env` - Base configuration (development)
-- `.env.development` - Development environment
-- `.env.production` - Production environment
-- `.env.example` - Template for other developers
-
-### Available Variables
-
-- `VITE_API_URL` - Backend API URL (default: `http://localhost:3000`)
-
-The Vite build tool automatically loads the appropriate environment file based on the `NODE_ENV`.
-
-### Environment Configuration
-
-For different environments, update the corresponding files:
-
-**Development** (`.env.development`):
-```bash
-VITE_API_URL=http://localhost:3000
-```
-
-**Production** (`.env.production`):
-```bash
-VITE_API_URL=https://api.alutrip.com
-```
 
 ## Features
 
